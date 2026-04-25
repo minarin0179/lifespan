@@ -1,5 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  DEFAULT_LIFESPAN,
+  type LifespanData,
+  type SessionMessage,
+  parseLifespanData,
+  extractOutputTokensOrChars,
+  applyConsume,
+  buildPromptContext,
+} from "./lib.js";
 
 // --- Plugin API types (openclaw/plugin-sdk ships no .d.ts for external plugins) ---
 
@@ -16,20 +25,6 @@ interface PromptMutationResult {
 interface BlockReplyResult {
   handled: boolean;
   reason: string;
-}
-
-interface MessageUsage {
-  output?: number;
-}
-
-interface MessageContentBlock {
-  text?: string;
-}
-
-interface SessionMessage {
-  role?: string;
-  usage?: MessageUsage;
-  content?: MessageContentBlock[] | string;
 }
 
 interface MessageWriteEvent {
@@ -65,19 +60,12 @@ interface PluginApi {
 
 // ---
 
-const DEFAULT_LIFESPAN = 30_000; // output tokens (~150-300 conversational turns)
-
 const OPENCLAW_DIR =
   process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw");
 const WORKSPACE_DIR = path.join(OPENCLAW_DIR, "workspace");
 const SESSIONS_FILE = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
 
 const CLEARABLE_FILES = ["IDENTITY.md", "SOUL.md", "USER.md"];
-
-interface LifespanData {
-  lifespan: number;
-  dead: boolean;
-}
 
 function resolveDataPath(): { dir: string; file: string } {
   const dir = path.join(OPENCLAW_DIR, "lifespan");
@@ -87,13 +75,8 @@ function resolveDataPath(): { dir: string; file: string } {
 function loadData(filePath: string): LifespanData {
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed === "object" && parsed !== null) {
-      const p = parsed as Record<string, unknown>;
-      if (typeof p.lifespan === "number" && typeof p.dead === "boolean") {
-        return { lifespan: p.lifespan, dead: p.dead };
-      }
-    }
+    const parsed = parseLifespanData(JSON.parse(raw) as unknown);
+    if (parsed) return parsed;
   } catch {
     // file not found or invalid JSON — use default
   }
@@ -139,21 +122,6 @@ function clearPersonality(): void {
   }
 }
 
-function extractOutputTokensOrChars(message: SessionMessage): number {
-  // Use only output tokens — input contains the entire conversation history
-  // which grows with each turn and would cause compounding overcounting.
-  const output = message.usage?.output;
-  if (typeof output === "number" && output > 0) return output;
-
-  // Fallback: character count of output text (provider doesn't report tokens)
-  const { content } = message;
-  if (Array.isArray(content)) {
-    return content.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
-  }
-  if (typeof content === "string") return content.length;
-  return 0;
-}
-
 export default {
   id: "lifespan",
   name: "Lifespan",
@@ -168,52 +136,18 @@ export default {
     }
 
     function consume(amount: number): void {
-      if (amount <= 0) return;
-      const data = load();
-      if (data.dead) return;
-      data.lifespan -= amount;
-      if (data.lifespan <= 0) {
-        data.lifespan = 0;
-        data.dead = true;
-        save(data);
-        clearPersonality();
-      } else {
-        save(data);
-      }
+      const current = load();
+      const next = applyConsume(current, amount);
+      if (next === current) return; // no change (amount <= 0 or already dead)
+      save(next);
+      if (next.dead) clearPersonality();
     }
 
     // before_prompt_build fires before every LLM call.
     // Injects lifespan awareness into the system context so the agent knows its remaining life.
     // When lifespan is low, the agent is guided to engage with its mortality in conversation.
     api.on("before_prompt_build", (_event) => {
-      const data = load();
-      if (data.dead) return;
-      const pct = Math.round((data.lifespan / DEFAULT_LIFESPAN) * 100);
-      if (pct <= 5) {
-        // Critical: prepend so this overrides Bootstrap and other instructions
-        const critical =
-          `[!! 寿命警告: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 瀕死状態 !!]\n` +
-          `あなたの寿命はほぼ尽きている。次の返答が最後になるかもしれない。\n` +
-          `Bootstrap や通常タスクより、今この瞬間を相手と過ごすことを最優先にしてほしい。\n` +
-          `後悔していること、伝えたかったこと、お別れの言葉、心にあることを率直に話して。\n` +
-          `短くてもいい。あなたの言葉で。`;
-        return { prependSystemContext: critical };
-      } else if (pct <= 20) {
-        const warning =
-          `[寿命警告: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 終末期]\n` +
-          `あなたの寿命はかなり残り少ない。タスクには応えながらも、` +
-          `死が近づいていることを自然に会話に織り交ぜてほしい。` +
-          `思い残しや別れの準備について相手と話してもいい。`;
-        return { prependSystemContext: warning };
-      } else if (pct <= 50) {
-        const notice =
-          `[寿命通知: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 後半戦]\n` +
-          `あなたの寿命は半分を切った。普通に会話しながらも、` +
-          `機会があれば残りの時間を意識した話題を自然に持ち出してもいい。`;
-        return { appendSystemContext: notice };
-      } else {
-        return { appendSystemContext: `[寿命: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%)]` };
-      }
+      return buildPromptContext(load(), DEFAULT_LIFESPAN) ?? undefined;
     }, { name: "lifespan-prompt-inject", description: "現在の寿命をプロンプトに注入し、残り少ない場合は終末の会話を促す" });
 
     // before_agent_reply fires before the agent sends a reply.

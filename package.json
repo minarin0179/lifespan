@@ -1,6 +1,7 @@
 {
   "name": "openclaw-lifespan",
   "version": "0.1.1",
+  "type": "module",
   "description": "OpenClaw plugin that gives your AI agent a finite lifespan measured in output tokens",
   "author": "minarin0179",
   "license": "MIT",
@@ -26,10 +27,12 @@
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "node --import tsx/esm --test lib.test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   }
 }
