@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_PATH = path.join("/root/.openclaw", "lifespan-data.json");
+const DATA_DIR = path.join(process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw"), "my-plugin");
+const DATA_PATH = path.join(DATA_DIR, "lifespan.json");
 const DEFAULT_LIFESPAN = 100;
 
 interface LifespanData {
@@ -22,6 +23,7 @@ function loadData(): LifespanData {
 }
 
 function saveData(data: LifespanData): void {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
