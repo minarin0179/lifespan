@@ -1,6 +1,6 @@
 {
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "description": "OpenClaw plugin",
+  "id": "lifespan",
+  "name": "Lifespan",
+  "description": "エージェントの寿命を JSON ファイルで管理するプラグイン",
   "configSchema": {}
 }

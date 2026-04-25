@@ -1,17 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_DIR = path.join(process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw"), "my-plugin");
-const DATA_PATH = path.join(DATA_DIR, "lifespan.json");
 const DEFAULT_LIFESPAN = 100;
 
 interface LifespanData {
   lifespan: number;
 }
 
-function loadData(): LifespanData {
+function resolveDataPath(pluginId: string): { dir: string; file: string } {
+  const stateDir = process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw");
+  const dir = path.join(stateDir, pluginId);
+  return { dir, file: path.join(dir, "lifespan.json") };
+}
+
+function loadData(filePath: string): LifespanData {
   try {
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+    const raw = fs.readFileSync(filePath, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     if (typeof parsed === "object" && parsed !== null && "lifespan" in parsed && typeof (parsed as LifespanData).lifespan === "number") {
       return parsed as LifespanData;
@@ -22,16 +26,20 @@ function loadData(): LifespanData {
   return { lifespan: DEFAULT_LIFESPAN };
 }
 
-function saveData(data: LifespanData): void {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
+function saveData(dir: string, filePath: string, data: LifespanData): void {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
 export default {
-  id: "my-plugin",
-  name: "My Plugin",
-  description: "OpenClaw plugin",
+  id: "lifespan",
+  name: "Lifespan",
+  description: "エージェントの寿命を JSON ファイルで管理するプラグイン",
   register(api: any) {
+    const { dir, file } = resolveDataPath(api.id);
+    const load = () => loadData(file);
+    const save = (data: LifespanData) => saveData(dir, file, data);
+
     api.registerTool({
       name: "lifespan_show",
       description: "現在の寿命の値を表示する",
@@ -41,8 +49,7 @@ export default {
         required: []
       },
       async execute(_toolCallId: string, _params: Record<string, never>) {
-        const data = loadData();
-        return `現在の寿命: ${data.lifespan}`;
+        return `現在の寿命: ${load().lifespan}`;
       }
     });
 
@@ -57,10 +64,10 @@ export default {
         required: ["amount"]
       },
       async execute(_toolCallId: string, { amount }: { amount: number }) {
-        const data = loadData();
+        const data = load();
         const before = data.lifespan;
         data.lifespan -= amount;
-        saveData(data);
+        save(data);
         return `寿命を ${amount} 減らしました: ${before} → ${data.lifespan}`;
       }
     });
@@ -76,10 +83,10 @@ export default {
         required: ["amount"]
       },
       async execute(_toolCallId: string, { amount }: { amount: number }) {
-        const data = loadData();
+        const data = load();
         const before = data.lifespan;
         data.lifespan += amount;
-        saveData(data);
+        save(data);
         return `寿命を ${amount} 増やしました: ${before} → ${data.lifespan}`;
       }
     });
@@ -92,8 +99,7 @@ export default {
       acceptsArgs: false,
       requireAuth: false,
       async handler() {
-        const data = loadData();
-        return { text: `現在の寿命: ${data.lifespan}` };
+        return { text: `現在の寿命: ${load().lifespan}` };
       }
     });
 
@@ -107,10 +113,10 @@ export default {
         if (!Number.isFinite(amount) || amount <= 0) {
           return { text: "使い方: /lifespan-decrease <正の数>" };
         }
-        const data = loadData();
+        const data = load();
         const before = data.lifespan;
         data.lifespan -= amount;
-        saveData(data);
+        save(data);
         return { text: `寿命を ${amount} 減らしました: ${before} → ${data.lifespan}` };
       }
     });
@@ -125,10 +131,10 @@ export default {
         if (!Number.isFinite(amount) || amount <= 0) {
           return { text: "使い方: /lifespan-increase <正の数>" };
         }
-        const data = loadData();
+        const data = load();
         const before = data.lifespan;
         data.lifespan += amount;
-        saveData(data);
+        save(data);
         return { text: `寿命を ${amount} 増やしました: ${before} → ${data.lifespan}` };
       }
     });
