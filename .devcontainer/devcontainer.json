@@ -26,6 +26,9 @@
   // 初回作成時: 依存インストール + gateway.mode 設定 + ローカルプラグインを OpenClaw に登録
   "postCreateCommand": "npm install --include=dev --prefix ${containerWorkspaceFolder} && openclaw config set gateway.mode local && openclaw plugins install ${containerWorkspaceFolder}",
 
+  // 起動のたびに: .env があれば読み込んでから gateway をバックグラウンド起動
+  "postStartCommand": "bash -c '[ -f ${containerWorkspaceFolder}/.env ] && set -a && source ${containerWorkspaceFolder}/.env && set +a; nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown'",
+
   // liveness (18789) / readiness (18790) ポートを転送
   "forwardPorts": [18789, 18790],
   "portsAttributes": {

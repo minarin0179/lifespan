@@ -10,6 +10,26 @@ devcontainer を使用。`ghcr.io/openclaw/openclaw:latest` を直接利用し�
 - OpenClaw 設定・データ: `/root/.openclaw`
 - コンテナユーザー: `root`
 
+## 環境変数 / API キー
+
+`.env` ファイル（gitignore 済み）に記載する。`.env.example` を参照。
+
+```bash
+# .env の作成
+cp .env.example .env
+# → OPENAI_API_KEY=sk-... を編集して保存
+```
+
+OpenClaw は `secrets.providers.default` (source: env) 経由で `OPENAI_API_KEY` を読む。
+`postStartCommand` が `.env` を source してからゲートウェイを起動するため、コンテナ再起動後は自動で反映される。
+
+現在のコンテナで即座に反映するには `.env` を手動で source してからゲートウェイを再起動する:
+
+```bash
+set -a && source /home/lifespan/.env && set +a
+openclaw plugins install /home/lifespan --force && pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+```
+
 ## コマンド
 
 ```bash
@@ -82,7 +102,7 @@ api.registerCommand({
 ## devcontainer のライフサイクル
 
 - **初回作成時** (`postCreateCommand`): `npm install --include=dev` → `openclaw config set gateway.mode local` → `openclaw plugins install /home/lifespan` でプラグイン登録
-- **起動のたびに** (`postStartCommand`): `nohup openclaw gateway run` がバックグラウンドで起動（systemd 非対応のため）
+- **起動のたびに** (`postStartCommand`): `.env` を source してから `nohup openclaw gateway run` がバックグラウンドで起動（systemd 非対応のため）
 - プラグインコードを変更しても自動リロードはない。上記「プラグインの変更を反映」コマンドで手動反映
 - `openclaw gateway restart` は systemd 前提のため使用不可
 
