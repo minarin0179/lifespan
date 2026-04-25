@@ -24,12 +24,20 @@ export function extractOutputTokensOrChars(message: SessionMessage): number {
   const output = message.usage?.output;
   if (typeof output === "number" && output > 0) return output;
 
+  // Fallback: estimate from character count when the provider doesn't report tokens.
+  // English averages ~4 chars/token, CJK ~1-2 chars/token, so this is a rough heuristic.
+  // We warn so the discrepancy is visible in openclaw.log.
   const { content } = message;
+  let chars = 0;
   if (Array.isArray(content)) {
-    return content.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
+    chars = content.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
+  } else if (typeof content === "string") {
+    chars = content.length;
   }
-  if (typeof content === "string") return content.length;
-  return 0;
+  if (chars > 0) {
+    console.warn(`[lifespan] usage.output not available; estimating from character count (${chars} chars)`);
+  }
+  return chars;
 }
 
 export function applyConsume(data: LifespanData, amount: number): LifespanData {
