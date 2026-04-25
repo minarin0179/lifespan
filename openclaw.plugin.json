@@ -1,0 +1,6 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "description": "OpenClaw plugin",
+  "configSchema": {}
+}

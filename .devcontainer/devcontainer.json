@@ -1,0 +1,51 @@
+{
+  "name": "OpenClaw Plugin Dev",
+  "image": "ghcr.io/openclaw/openclaw:latest",
+
+  // セッション・メモリはプロジェクトパスをキーに保存される
+  // コンテナ内パスをホストと同じにしないと別プロジェクトと認識されセッションが共有されない
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached",
+  "workspaceFolder": "${localWorkspaceFolder}",
+
+  "mounts": [
+    // OpenClaw の設定・データを名前付きボリュームに永続化
+    "source=openclaw-data,target=/home/node/.openclaw,type=volume",
+    // ホストの Claude Code 履歴・設定をコンテナの root ホームに共有
+    // ホスト側が root (uid=0) で所有しているため、コンテナも root で読む必要がある
+    "source=${localEnv:HOME}/.claude,target=/root/.claude,type=bind,consistency=cached",
+    // ホストの git 設定を共有（名前・メールアドレスをコンテナ内でも使用）
+    "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+  ],
+
+  // ホスト ~/.claude が root 所有 (600) のためコンテナも root で実行
+  "remoteUser": "root",
+
+  // 初回作成時: 依存インストール + gateway.mode 設定 + ローカルプラグインを OpenClaw に登録
+  "postCreateCommand": "npm install --prefix ${containerWorkspaceFolder} && openclaw config set gateway.mode local && openclaw plugins install ${containerWorkspaceFolder}",
+
+  // liveness (18789) / readiness (18790) ポートを転送
+  "forwardPorts": [18789, 18790],
+  "portsAttributes": {
+    "18789": {
+      "label": "OpenClaw Gateway (liveness)",
+      "onAutoForward": "notify"
+    },
+    "18790": {
+      "label": "OpenClaw Bridge (readiness)",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  }
+}
