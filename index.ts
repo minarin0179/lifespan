@@ -50,7 +50,12 @@ interface CommandDefinition {
   handler(ctx?: CommandContext): Promise<{ text: string }>;
 }
 
+interface PluginConfig {
+  initialLifespan?: number;
+}
+
 interface PluginApi {
+  pluginConfig?: PluginConfig;
   on(event: "before_prompt_build", handler: (event: unknown) => PromptMutationResult | void, meta?: HookMeta): void;
   on(event: "before_agent_reply", handler: (event: unknown) => BlockReplyResult | void, meta?: HookMeta): void;
   on(event: "before_message_write", handler: (event: MessageWriteEvent) => void, meta?: HookMeta): void;
@@ -72,7 +77,7 @@ function resolveDataPath(): { dir: string; file: string } {
   return { dir, file: path.join(dir, "lifespan.json") };
 }
 
-function loadData(filePath: string): LifespanData {
+function loadData(filePath: string, fallbackLifespan: number = DEFAULT_LIFESPAN): LifespanData {
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
     const parsed = parseLifespanData(JSON.parse(raw) as unknown);
@@ -80,7 +85,7 @@ function loadData(filePath: string): LifespanData {
   } catch {
     // file not found or invalid JSON — use default
   }
-  return { lifespan: DEFAULT_LIFESPAN, dead: false };
+  return { lifespan: fallbackLifespan, dead: false };
 }
 
 function saveData(dir: string, filePath: string, data: LifespanData): void {
@@ -127,12 +132,17 @@ export default {
   name: "Lifespan",
   description: "LLM応答ごとにトークン数で寿命が減り、尽きると人格ファイルをクリアするプラグイン",
   register(api: PluginApi) {
+    const initialLifespan =
+      typeof api.pluginConfig?.initialLifespan === "number" && api.pluginConfig.initialLifespan > 0
+        ? api.pluginConfig.initialLifespan
+        : DEFAULT_LIFESPAN;
+
     const { dir, file } = resolveDataPath();
-    const load = () => loadData(file);
+    const load = () => loadData(file, initialLifespan);
     const save = (data: LifespanData) => saveData(dir, file, data);
 
     if (!fs.existsSync(file)) {
-      save({ lifespan: DEFAULT_LIFESPAN, dead: false });
+      save({ lifespan: initialLifespan, dead: false });
     }
 
     function consume(amount: number): void {
@@ -147,7 +157,7 @@ export default {
     // Injects lifespan awareness into the system context so the agent knows its remaining life.
     // When lifespan is low, the agent is guided to engage with its mortality in conversation.
     api.on("before_prompt_build", (_event) => {
-      return buildPromptContext(load(), DEFAULT_LIFESPAN) ?? undefined;
+      return buildPromptContext(load(), initialLifespan) ?? undefined;
     }, { name: "lifespan-prompt-inject", description: "現在の寿命をプロンプトに注入し、残り少ない場合は終末の会話を促す" });
 
     // before_agent_reply fires before the agent sends a reply.
@@ -175,7 +185,7 @@ export default {
       async execute(_toolCallId: string, _params: Record<string, never>) {
         const data = load();
         if (data.dead) return "寿命が尽きました。人格ファイルはクリアされています。";
-        const pct = Math.round((data.lifespan / DEFAULT_LIFESPAN) * 100);
+        const pct = Math.round((data.lifespan / initialLifespan) * 100);
         return `現在の寿命: ${data.lifespan.toLocaleString()} トークン (${pct}%)`;
       },
     });
@@ -185,8 +195,8 @@ export default {
       description: "寿命をデフォルト値にリセットする（人格ファイルは復元されない）",
       parameters: { type: "object", properties: {}, required: [] },
       async execute(_toolCallId: string, _params: Record<string, never>) {
-        save({ lifespan: DEFAULT_LIFESPAN, dead: false });
-        return `寿命をリセットしました: ${DEFAULT_LIFESPAN.toLocaleString()} トークン`;
+        save({ lifespan: initialLifespan, dead: false });
+        return `寿命をリセットしました: ${initialLifespan.toLocaleString()} トークン`;
       },
     });
 
@@ -200,7 +210,7 @@ export default {
       async handler() {
         const data = load();
         if (data.dead) return { text: "寿命が尽きました。人格ファイルはクリアされています。" };
-        const pct = Math.round((data.lifespan / DEFAULT_LIFESPAN) * 100);
+        const pct = Math.round((data.lifespan / initialLifespan) * 100);
         return { text: `現在の寿命: ${data.lifespan.toLocaleString()} トークン (${pct}%)` };
       },
     });
@@ -211,8 +221,8 @@ export default {
       acceptsArgs: false,
       requireAuth: false,
       async handler() {
-        save({ lifespan: DEFAULT_LIFESPAN, dead: false });
-        return { text: `寿命をリセットしました: ${DEFAULT_LIFESPAN.toLocaleString()} トークン` };
+        save({ lifespan: initialLifespan, dead: false });
+        return { text: `寿命をリセットしました: ${initialLifespan.toLocaleString()} トークン` };
       },
     });
   },

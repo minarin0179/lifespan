@@ -2,5 +2,14 @@
   "id": "lifespan",
   "name": "Lifespan",
   "description": "エージェントの寿命を JSON ファイルで管理するプラグイン",
-  "configSchema": {}
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "initialLifespan": {
+        "type": "number",
+        "description": "初期寿命（アウトプットトークン数）。デフォルト: 30000"
+      }
+    }
+  }
 }
