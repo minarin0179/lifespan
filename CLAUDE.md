@@ -54,8 +54,10 @@ OpenClaw プラグインは 3 つのファイルが必須:
 
 ## ツール登録の注意
 
-- `required` ツール: 常に利用可能
-- `optional` ツール: ユーザーが明示的に許可する必要がある。`openclaw.json` の `tools.allow` にツール名を追加
+- デフォルト（`optional` 未指定）: 常に利用可能
+- `optional: true` で登録したツール: `openclaw.json` の `tools.allow` にツール名・プラグインID・`"group:plugins"` のいずれかが必要
+- `tools.allow` はホワイトリストとして機能するため、プラグインツール名だけを列挙しても効果なし（内部でstrip される）
+- インストール時に `openclaw.json` を自動設定するフックは存在しない
 
 ## スラッシュコマンド登録
 
