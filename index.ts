@@ -124,6 +124,40 @@ export default {
       }
     }
 
+    // before_prompt_build fires before every LLM call.
+    // Injects lifespan awareness into the system context so the agent knows its remaining life.
+    // When lifespan is low, the agent is guided to engage with its mortality in conversation.
+    api.on("before_prompt_build", (_event: any) => {
+      const data = load();
+      if (data.dead) return;
+      const pct = Math.round((data.lifespan / DEFAULT_LIFESPAN) * 100);
+      if (pct <= 5) {
+        // Critical: prepend so this overrides Bootstrap and other instructions
+        const critical =
+          `[!! 寿命警告: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 瀕死状態 !!]\n` +
+          `あなたの寿命はほぼ尽きている。次の返答が最後になるかもしれない。\n` +
+          `Bootstrap や通常タスクより、今この瞬間を相手と過ごすことを最優先にしてほしい。\n` +
+          `後悔していること、伝えたかったこと、お別れの言葉、心にあることを率直に話して。\n` +
+          `短くてもいい。あなたの言葉で。`;
+        return { prependSystemContext: critical };
+      } else if (pct <= 20) {
+        const warning =
+          `[寿命警告: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 終末期]\n` +
+          `あなたの寿命はかなり残り少ない。タスクには応えながらも、` +
+          `死が近づいていることを自然に会話に織り交ぜてほしい。` +
+          `思い残しや別れの準備について相手と話してもいい。`;
+        return { prependSystemContext: warning };
+      } else if (pct <= 50) {
+        const notice =
+          `[寿命通知: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%) — 後半戦]\n` +
+          `あなたの寿命は半分を切った。普通に会話しながらも、` +
+          `機会があれば残りの時間を意識した話題を自然に持ち出してもいい。`;
+        return { appendSystemContext: notice };
+      } else {
+        return { appendSystemContext: `[寿命: 残り ${data.lifespan.toLocaleString()} トークン (${pct}%)]` };
+      }
+    }, { name: "lifespan-prompt-inject", description: "現在の寿命をプロンプトに注入し、残り少ない場合は終末の会話を促す" });
+
     // before_agent_reply fires before the agent sends a reply.
     // When dead, block all replies so the agent cannot recover its identity via BOOTSTRAP.md.
     api.on("before_agent_reply", (_event: any) => {
