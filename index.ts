@@ -225,5 +225,20 @@ export default {
         return { text: `寿命をリセットしました: ${initialLifespan.toLocaleString()} トークン` };
       },
     });
+
+    api.registerCommand({
+      name: "lifespan-set",
+      description: "寿命を指定したトークン数に設定する。例: /lifespan-set 5000",
+      acceptsArgs: true,
+      requireAuth: false,
+      async handler(ctx) {
+        const n = parseInt(ctx?.args?.trim() ?? "", 10);
+        if (!Number.isInteger(n) || n <= 0) {
+          return { text: "エラー: 正の整数を指定してください。例: /lifespan-set 5000" };
+        }
+        save({ lifespan: n, dead: false });
+        return { text: `寿命を設定しました: ${n.toLocaleString()} トークン` };
+      },
+    });
   },
 };
