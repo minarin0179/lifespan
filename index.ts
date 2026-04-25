@@ -1,8 +1,9 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-
-export default definePluginEntry({
-  tools: [
-    {
+export default {
+  id: "my-plugin",
+  name: "My Plugin",
+  description: "OpenClaw plugin",
+  register(api: any) {
+    api.registerTool({
       name: "hello",
       description: "A sample tool that returns a greeting",
       parameters: {
@@ -12,9 +13,9 @@ export default definePluginEntry({
         },
         required: ["name"]
       },
-      async execute({ name }: { name: string }) {
+      async execute(_toolCallId: string, { name }: { name: string }) {
         return `Hello, ${name}!`;
       }
-    }
-  ]
-});
+    });
+  }
+};
