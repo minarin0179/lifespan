@@ -27,7 +27,7 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .eyebrow {
@@ -41,7 +41,7 @@ body {
 
 .headline {
   margin: 0 0 4px;
-  font-size: clamp(32px, 7vw, 64px);
+  font-size: clamp(28px, 5.4vw, 48px);
   letter-spacing: -0.06em;
 }
 
@@ -103,6 +103,9 @@ body {
 }
 
 .hero-panel {
+  display: flex;
+  align-items: center;
+  min-height: 348px;
   padding: 24px 28px;
 }
 
@@ -117,7 +120,18 @@ body {
 .hero-copy {
   flex: 1;
   min-width: 0;
+  min-height: 298px;
+  display: flex;
+  flex-direction: column;
   transform: translateX(10px);
+}
+
+.hero-copy-preview-open {
+  justify-content: flex-start;
+}
+
+.hero-copy-preview-collapsed {
+  justify-content: center;
 }
 
 .section-kicker {
@@ -394,8 +408,40 @@ body {
   animation-duration: 5.2s;
 }
 
-.hero-bar {
-  max-width: 360px;
+.bar.hero-bar {
+  position: relative;
+  width: 360px;
+  max-width: calc(100% - 70px);
+  overflow: visible;
+}
+
+.life-preview-toggle {
+  position: absolute;
+  right: -62px;
+  top: 50%;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(96, 165, 250, 0.64);
+  border-radius: 50%;
+  background: rgba(26, 43, 77, 0.96);
+  color: #e0f2fe;
+  cursor: pointer;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(7, 11, 26, 0.36);
+}
+
+.life-preview-toggle:hover,
+.life-preview-toggle:focus-visible {
+  background: #223861;
+  outline: 2px solid rgba(96, 165, 250, 0.38);
+  outline-offset: 2px;
 }
 
 .life-preview-control {
@@ -472,6 +518,7 @@ body {
 
 .fill {
   height: 100%;
+  border-radius: inherit;
 }
 
 .timeline {
@@ -514,6 +561,10 @@ body {
   cursor: not-allowed;
 }
 
+.chat-panel {
+  background: #111827;
+}
+
 .chat-box {
   border: 1px solid #2f3b54;
   background: linear-gradient(180deg, #0b1329 0%, #0a1122 100%);
@@ -550,6 +601,15 @@ body {
   flex: 0 0 auto;
 }
 
+.chat-agent-avatar {
+  border-color: var(--stage-ring);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.82), transparent 18%),
+    radial-gradient(circle at 50% 50%, var(--stage-core), #111827 78%);
+  color: #f8fafc;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--stage-ring) 58%, transparent);
+}
+
 .chat-bubble-wrap {
   max-width: min(78%, 560px);
 }
@@ -563,18 +623,20 @@ body {
 
 .chat-bubble {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 9px 12px;
+  border-radius: 18px;
   white-space: pre-wrap;
   line-height: 1.5;
   position: relative;
   word-break: break-word;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
 }
 
 .chat-assistant .chat-bubble {
-  background: #1b2743;
-  border: 1px solid #324c7d;
-  border-bottom-left-radius: 6px;
+  background: #ffffff;
+  border: 0;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
 }
 
 .chat-user {
@@ -592,10 +654,66 @@ body {
 }
 
 .chat-user .chat-bubble {
-  background: #2f6fed;
-  border: 1px solid #4e89ff;
-  color: #f7fbff;
-  border-bottom-right-radius: 6px;
+  background: #8de055;
+  border: 0;
+  color: #17200f;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-user .chat-name {
+  color: #263247;
+}
+
+.chat-image {
+  display: block;
+  max-width: min(260px, 100%);
+  max-height: 220px;
+  margin-bottom: 6px;
+  border: 0;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
+.chat-image-preview {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid #30405f;
+  border-radius: 12px;
+  background: #0e162c;
+  padding: 7px 9px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.chat-image-preview img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.chat-image-preview span {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-image-preview button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #355185;
+  border-radius: 999px;
+  background: #1a2b4d;
+  color: #e5e7eb;
+  cursor: pointer;
 }
 
 .chat-error {
@@ -606,35 +724,70 @@ body {
 .chat-form {
   margin-top: 10px;
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #2a3a58;
+  border-radius: 999px;
+  background: #eef2f7;
+  padding: 3px 6px;
+}
+
+.chat-upload-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #d8e0ea;
+  color: #516070;
+  cursor: pointer;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.chat-upload-btn:hover {
+  background: #cbd5e1;
+}
+
+.chat-upload-btn input {
+  display: none;
 }
 
 .chat-input {
   flex: 1;
-  border-radius: 12px;
-  border: 1px solid #30405f;
-  background: #0e162c;
-  color: #e5e7eb;
-  padding: 12px;
-  resize: vertical;
-  min-height: 54px;
+  border-radius: 18px;
+  border: 0;
+  background: #ffffff;
+  color: #111827;
+  padding: 8px 12px;
+  resize: none;
+  min-height: 32px;
+  max-height: 72px;
+  line-height: 1.25;
+}
+
+.chat-input::placeholder {
+  color: #94a3b8;
 }
 
 .chat-send-btn {
-  border: 1px solid #4e89ff;
-  background: linear-gradient(180deg, #3f7af2 0%, #2f6fed 100%);
+  border: 0;
+  background: #06c755;
   color: #ffffff;
   border-radius: 999px;
-  padding: 10px 18px;
+  padding: 8px 15px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
-  min-width: 84px;
+  font-weight: 800;
+  min-width: 72px;
 }
 
 .chat-send-btn:hover {
-  background: linear-gradient(180deg, #4a85f5 0%, #3676f1 100%);
+  background: #05b84d;
 }
 
 .chat-send-btn:disabled {
@@ -642,38 +795,187 @@ body {
   cursor: not-allowed;
 }
 
-.school-board {
+.school-panel {
+  border-color: #a16a2a;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 235, 0.08), rgba(255, 250, 235, 0.02)),
+    #111827;
+}
+
+.school-room {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  border: 2px solid #c78a3a;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #fff8dc 0%, #fff2c6 50%, #d9963b 50%, #e4b060 100%);
+  padding: 22px 22px 24px;
+  color: #3b2412;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.school-room::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 36%;
+  content: "";
+  background:
+    repeating-linear-gradient(90deg, rgba(102, 62, 24, 0.28) 0 2px, transparent 2px 38px),
+    linear-gradient(180deg, rgba(255, 225, 146, 0.48), rgba(164, 91, 25, 0.32));
+  transform: perspective(480px) rotateX(58deg);
+  transform-origin: bottom;
+}
+
+.school-blackboard {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  min-height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 auto 18px;
+  border: 8px solid #9b682e;
+  border-bottom-width: 12px;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.07), transparent 14rem),
+    #0f5136;
+  color: #eefce7;
+  padding: 18px 22px;
+  box-shadow: 0 12px 20px rgba(90, 55, 22, 0.2);
+}
+
+.school-blackboard .section-title {
+  margin-bottom: 6px;
+  color: #f8fff4;
+}
+
+.school-blackboard p {
+  margin: 0;
+  color: #d8f3dc;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.school-chalk {
+  align-self: flex-end;
+  width: 38px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f6e27f;
+  box-shadow: 0 0 0 1px rgba(59, 36, 18, 0.18);
+}
+
+.teacher-desk {
+  position: relative;
+  z-index: 2;
+  width: 150px;
+  min-height: 58px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  place-items: center;
+  gap: 2px;
+  margin: -2px auto 12px;
+  border: 2px solid #8a4b12;
+  border-radius: 4px 4px 10px 10px;
+  background: linear-gradient(180deg, #b36a15 0%, #8f4a0f 100%);
+  color: #fff7ed;
+  box-shadow: 0 10px 18px rgba(94, 56, 19, 0.2);
+}
+
+.teacher-desk span {
+  color: #ffedd5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.school-board {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .school-card {
-  border: 1px solid #26395d;
-  border-radius: 14px;
-  background: #0c1428;
-  padding: 14px;
+  position: relative;
+  min-height: 116px;
+  border: 2px solid #9a5a17;
+  border-radius: 10px 10px 18px 18px;
+  background:
+    linear-gradient(180deg, #d8922e 0 32px, #fff8df 32px 100%);
+  padding: 14px 12px 12px;
+  color: #3b2412;
+  box-shadow: 0 14px 20px rgba(94, 56, 19, 0.18);
+}
+
+.school-card::before,
+.school-card::after {
+  position: absolute;
+  bottom: -18px;
+  width: 12px;
+  height: 22px;
+  content: "";
+  border-radius: 999px 999px 4px 4px;
+  background: #e5e7eb;
+  box-shadow: inset 0 0 0 3px #9ca3af;
+}
+
+.school-card::before {
+  left: 18px;
+}
+
+.school-card::after {
+  right: 18px;
 }
 
 .school-card p {
   margin: 8px 0 0;
-  color: #9cadc5;
+  color: #6b4b2a;
   font-size: 13px;
-  line-height: 1.5;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .school-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  background: #1d4ed8;
-  color: #dbeafe;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: #0f5136;
+  color: #f0fdf4;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
+}
+
+.school-log {
+  position: relative;
+  z-index: 2;
+  margin-top: 34px;
+  border: 1px dashed rgba(107, 75, 42, 0.5);
+  border-radius: 14px;
+  background: rgba(255, 248, 223, 0.86);
+  padding: 12px;
+}
+
+.school-log > strong {
+  color: #7c2d12;
+  font-size: 13px;
+}
+
+.school-log .timeline {
+  margin-top: 8px;
+}
+
+.school-log .timeline li {
+  color: #5a3516;
+  font-weight: 700;
 }
 
 .family-panel {
@@ -1380,6 +1682,21 @@ body {
   .lineage-node-current {
     width: 66px;
     min-height: 140px;
+  }
+
+  .school-room {
+    padding: 16px 14px 22px;
+  }
+
+  .school-blackboard {
+    border-width: 6px;
+    border-bottom-width: 10px;
+    padding: 14px;
+  }
+
+  .school-board {
+    grid-template-columns: 1fr;
+    gap: 26px;
   }
 
   .footer-nav {

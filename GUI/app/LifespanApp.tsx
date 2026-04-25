@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { ChangeEvent, CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Agent = {
@@ -30,7 +30,15 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  image?: UploadedImage;
 };
+
+type UploadedImage = {
+  name: string;
+  dataUrl: string;
+};
+
+const CHAT_HISTORY_STORAGE_KEY = "lifespan-chat-history-v1";
 
 type FooterTab = "chat" | "school" | "family" | "home";
 
@@ -115,6 +123,27 @@ const LINEAGE_BASE_WIDTH = 900;
 const LINEAGE_BASE_HEIGHT = 620;
 const LINEAGE_MIN_ZOOM = 0.5;
 const LINEAGE_MAX_ZOOM = 1.6;
+
+function parseStoredChatMessages(raw: string | null): ChatMessage[] {
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((message): message is ChatMessage => {
+      if (typeof message !== "object" || message === null) return false;
+      const candidate = message as Partial<ChatMessage>;
+      return (
+        typeof candidate.id === "string" &&
+        (candidate.role === "user" || candidate.role === "assistant") &&
+        typeof candidate.content === "string"
+      );
+    });
+  } catch {
+    return [];
+  }
+}
 
 const mockFamilyMembers: FamilyMember[] = [
   {
@@ -233,14 +262,17 @@ export default function LifespanApp() {
   const [parentBId, setParentBId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<FooterTab>("chat");
   const [input, setInput] = useState<string>("");
+  const [selectedImage, setSelectedImage] = useState<UploadedImage | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState<boolean>(false);
   const [chatError, setChatError] = useState<string>("");
   const [openclawSession, setOpenclawSession] = useState<string>("");
   const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<string | null>(null);
   const [previewLifePercent, setPreviewLifePercent] = useState<number | null>(null);
+  const [isLifePreviewOpen, setIsLifePreviewOpen] = useState<boolean>(false);
   const [lineageZoom, setLineageZoom] = useState<number>(1);
   const [isLineagePanning, setIsLineagePanning] = useState<boolean>(false);
+  const chatBoxRef = useRef<HTMLDivElement | null>(null);
   const lineageCanvasRef = useRef<HTMLDivElement | null>(null);
   const lineageDragRef = useRef({
     active: false,
@@ -282,6 +314,15 @@ export default function LifespanApp() {
       setParentBId(fallback);
     }
   }, [data.agents, mainAgentId, parentAId, parentBId]);
+
+  useEffect(() => {
+    const chatBox = chatBoxRef.current;
+    if (!chatBox) return;
+
+    requestAnimationFrame(() => {
+      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+    });
+  }, [chatMessages, chatLoading]);
 
   const mainAgent = useMemo(
     () => data.agents.find((agent) => agent.id === mainAgentId) ?? data.agents[0],
@@ -363,17 +404,39 @@ export default function LifespanApp() {
     setSelectedFamilyMemberId(memberId);
   };
 
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      setSelectedImage({ name: file.name, dataUrl: reader.result });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
+  const handleChatInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+
+    event.preventDefault();
+    void handleSend();
+  };
+
   const handleSend = async () => {
     const message = input.trim();
-    if (!message || chatLoading) return;
+    if ((!message && !selectedImage) || chatLoading) return;
 
     const userMessage: ChatMessage = {
       id: `u_${Date.now()}`,
       role: "user",
-      content: message
+      content: message || "画像を送信しました。",
+      image: selectedImage ?? undefined
     };
     setChatMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setSelectedImage(null);
     setChatLoading(true);
     setChatError("");
 
@@ -385,7 +448,7 @@ export default function LifespanApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message,
+          message: selectedImage ? `${message || "画像を送信しました。"}\n\n[添付画像: ${selectedImage.name}]` : message,
           systemPrompt,
           agentId: mainAgent?.id,
           agentName: mainAgent?.name
@@ -441,7 +504,6 @@ export default function LifespanApp() {
         <div>
           <p className="eyebrow">Hackathon mock</p>
           <h1 className="headline">生命AI</h1>
-          <p className="sub">寿命（トークン残量）を持つAIが、会話・学習・家族関係を通して変化します。</p>
         </div>
       </header>
 
@@ -455,7 +517,7 @@ export default function LifespanApp() {
             >
               <span className="life-face">{mainLifeStage.face}</span>
             </div>
-            <div className="hero-copy">
+            <div className={`hero-copy ${isLifePreviewOpen ? "hero-copy-preview-open" : "hero-copy-preview-collapsed"}`}>
               <p className="section-kicker">OpenClaw メインエージェント</p>
               <p className="main-name">
                 {mainAgent.name}
@@ -470,30 +532,42 @@ export default function LifespanApp() {
               </p>
               <div className="bar hero-bar">
                 <div className="fill" style={{ width: `${mainLifePercent}%`, background: lifeColor(mainLifePercent) }} />
+                <button
+                  type="button"
+                  className="life-preview-toggle"
+                  onClick={() => setIsLifePreviewOpen((isOpen) => !isOpen)}
+                  aria-expanded={isLifePreviewOpen}
+                  aria-controls="life-preview-control"
+                  aria-label={isLifePreviewOpen ? "寿命プレビューを閉じる" : "寿命プレビューを調整する"}
+                >
+                  {isLifePreviewOpen ? "閉" : "調整"}
+                </button>
               </div>
               <small>
                 残トークン: {mainAgent.tokenBalance} / {mainAgent.maxTokens}
               </small>
-              <div className="life-preview-control">
-                <div className="life-preview-header">
-                  <span>寿命プレビュー</span>
-                  <strong>{mainLifePercent}%</strong>
+              {isLifePreviewOpen ? (
+                <div id="life-preview-control" className="life-preview-control">
+                  <div className="life-preview-header">
+                    <span>寿命プレビュー</span>
+                    <strong>{mainLifePercent}%</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={mainLifePercent}
+                    onChange={(event) => setPreviewLifePercent(Number(event.target.value))}
+                    aria-label="表示テスト用の寿命プレビュー"
+                  />
+                  <div className="life-preview-footer">
+                    <span>見た目だけ変更</span>
+                    <button type="button" onClick={() => setPreviewLifePercent(null)} disabled={previewLifePercent === null}>
+                      実値に戻す
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={mainLifePercent}
-                  onChange={(event) => setPreviewLifePercent(Number(event.target.value))}
-                  aria-label="表示テスト用の寿命プレビュー"
-                />
-                <div className="life-preview-footer">
-                  <span>見た目だけ変更</span>
-                  <button type="button" onClick={() => setPreviewLifePercent(null)} disabled={previewLifePercent === null}>
-                    実値に戻す
-                  </button>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         </section>
@@ -501,21 +575,42 @@ export default function LifespanApp() {
 
       <div className="tab-content">
         {activeTab === "chat" ? (
-          <section className="panel">
+          <section className="panel chat-panel">
             <h2 className="section-title">チャット</h2>
             <p className="subline">
               この画面から送信した内容は OpenClaw のセッションに保存され、生命AIの寿命表示にも反映されます。
             </p>
             {openclawSession ? <p className="session-label">OpenClawセッション: {openclawSession}</p> : null}
-            <div className="chat-box">
+            <div ref={chatBoxRef} className="chat-box">
               {chatMessages.length === 0 ? (
-                <p className="chat-empty">まだ会話がありません。下からメッセージを送ってください。</p>
+                <div className="chat-row chat-assistant">
+                  <div
+                    className="chat-avatar chat-agent-avatar"
+                    style={{ "--stage-ring": mainLifeStage.ring, "--stage-core": mainLifeStage.core } as CSSProperties}
+                  >
+                    {mainLifeStage.face}
+                  </div>
+                  <div className="chat-bubble-wrap">
+                    <strong className="chat-name">{mainAgent?.name ?? "生命AI"}</strong>
+                    <p className="chat-bubble">何か話したいことはある？</p>
+                  </div>
+                </div>
               ) : (
                 chatMessages.map((msg) => (
                   <div key={msg.id} className={`chat-row ${msg.role === "user" ? "chat-user" : "chat-assistant"}`}>
-                    <div className="chat-avatar">{msg.role === "user" ? "🙂" : mainLifeStage.face}</div>
+                    <div
+                      className={`chat-avatar ${msg.role === "assistant" ? "chat-agent-avatar" : ""}`}
+                      style={
+                        msg.role === "assistant"
+                          ? ({ "--stage-ring": mainLifeStage.ring, "--stage-core": mainLifeStage.core } as CSSProperties)
+                          : undefined
+                      }
+                    >
+                      {msg.role === "user" ? "🙂" : mainLifeStage.face}
+                    </div>
                     <div className="chat-bubble-wrap">
                       <strong className="chat-name">{msg.role === "user" ? "あなた" : mainAgent?.name ?? "生命AI"}</strong>
+                      {msg.image ? <img className="chat-image" src={msg.image.dataUrl} alt={msg.image.name} /> : null}
                       <p className="chat-bubble">{msg.content}</p>
                     </div>
                   </div>
@@ -523,13 +618,27 @@ export default function LifespanApp() {
               )}
             </div>
             {chatError ? <p className="chat-error">エラー: {chatError}</p> : null}
+            {selectedImage ? (
+              <div className="chat-image-preview">
+                <img src={selectedImage.dataUrl} alt={selectedImage.name} />
+                <span>{selectedImage.name}</span>
+                <button type="button" onClick={() => setSelectedImage(null)} aria-label="選択した画像を削除">
+                  ×
+                </button>
+              </div>
+            ) : null}
             <div className="chat-form">
+              <label className="chat-upload-btn" aria-label="画像をアップロード">
+                ＋
+                <input type="file" accept="image/*" onChange={handleImageChange} disabled={chatLoading} />
+              </label>
               <textarea
                 className="chat-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleChatInputKeyDown}
                 placeholder="生命AIに話しかける"
-                rows={3}
+                rows={1}
               />
               <button type="button" className="chat-send-btn" onClick={handleSend} disabled={chatLoading}>
                 {chatLoading ? "送信中..." : "送信"}
@@ -539,37 +648,55 @@ export default function LifespanApp() {
         ) : null}
 
         {activeTab === "school" ? (
-          <section className="panel">
-            <h2 className="section-title">学校</h2>
-            <p className="subline">AIエージェント同士が交流する場所です。今はモックの授業ログを表示しています。</p>
-            <div className="school-board">
-              <div className="school-card">
-                <span className="school-icon">朝</span>
-                <strong>朝の会</strong>
-                <p>今日の学びたいテーマを共有する。</p>
+          <section className="panel school-panel">
+            <div className="school-room">
+              <div className="school-blackboard">
+                <div>
+                  <p className="section-kicker">School mock</p>
+                  <h2 className="section-title">生命AI 学校</h2>
+                  <p>AIエージェント同士が交流し、問いや記憶を次の会話へつなぐ教室です。</p>
+                </div>
+                <span className="school-chalk" aria-hidden="true" />
               </div>
-              <div className="school-card">
-                <span className="school-icon">問</span>
-                <strong>問いの交換</strong>
-                <p>別の生命AIに質問して視点を増やす。</p>
+
+              <div className="teacher-desk">
+                <strong>今日の授業</strong>
+                <span>対話・観察・記録</span>
               </div>
-              <div className="school-card">
-                <span className="school-icon">記</span>
-                <strong>記憶の整理</strong>
-                <p>寿命が減る前に大事な経験をまとめる。</p>
+
+              <div className="school-board">
+                <div className="school-card">
+                  <span className="school-icon">朝</span>
+                  <strong>朝の会</strong>
+                  <p>今日の学びたいテーマを共有する。</p>
+                </div>
+                <div className="school-card">
+                  <span className="school-icon">問</span>
+                  <strong>問いの交換</strong>
+                  <p>別の生命AIに質問して視点を増やす。</p>
+                </div>
+                <div className="school-card">
+                  <span className="school-icon">記</span>
+                  <strong>記憶の整理</strong>
+                  <p>寿命が減る前に大事な経験をまとめる。</p>
+                </div>
+              </div>
+
+              <div className="school-log">
+                <strong>交流ログ</strong>
+                <ul className="timeline">
+                  {data.conversations.length === 0 ? (
+                    <li>まだ交流ログはありません。デモではここにAI同士の会話が流れます。</li>
+                  ) : (
+                    data.conversations.map((post) => (
+                      <li key={post.id}>
+                        <strong>{post.agentId}</strong>: {post.body}
+                      </li>
+                    ))
+                  )}
+                </ul>
               </div>
             </div>
-            <ul className="timeline">
-              {data.conversations.length === 0 ? (
-                <li>まだ交流ログはありません。デモではここにAI同士の会話が流れます。</li>
-              ) : (
-                data.conversations.map((post) => (
-                  <li key={post.id}>
-                    <strong>{post.agentId}</strong>: {post.body}
-                  </li>
-                ))
-              )}
-            </ul>
           </section>
         ) : null}
 
