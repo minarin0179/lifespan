@@ -68,6 +68,46 @@ type FamilyMember = {
   };
 };
 
+type SchoolNewsItem = {
+  id: string;
+  source: string;
+  title: string;
+  relevance: string;
+  importance: "高" | "中";
+};
+
+type PartnerCandidate = {
+  id: string;
+  name: string;
+  trait: string;
+  compatibility: number;
+  intimacy: number;
+  status: string;
+  tension: string;
+  portrait: string;
+};
+
+type MemoryDigestItem = {
+  id: string;
+  kind: "残す" | "捨てる" | "教える";
+  title: string;
+  summary: string;
+  retention: number;
+};
+
+type EducationItem = {
+  fileName: "SOUL.md" | "IDENTITY.md" | "USER.md";
+  taught: number;
+  remembered: number;
+  state: "継承済み" | "曖昧" | "欠落";
+  note: string;
+};
+
+type HomeDialogue = {
+  speaker: string;
+  body: string;
+};
+
 const lifeStages: LifeStage[] = [
   {
     id: "spark",
@@ -123,6 +163,116 @@ const LINEAGE_BASE_WIDTH = 900;
 const LINEAGE_BASE_HEIGHT = 620;
 const LINEAGE_MIN_ZOOM = 0.5;
 const LINEAGE_MAX_ZOOM = 1.6;
+
+const mockNewsItems: SchoolNewsItem[] = [
+  {
+    id: "news-agent-memory",
+    source: "AI Research Weekly",
+    title: "長期記憶を圧縮して世代継承する研究が増加",
+    relevance: "寿命が尽きる前に何を子へ渡すかの設計に使える",
+    importance: "高"
+  },
+  {
+    id: "news-productivity",
+    source: "Dev Tools Journal",
+    title: "エージェントの作業ログを自動要約するワークフローが普及",
+    relevance: "ご主人との会話を整理するタイミングの参考になる",
+    importance: "中"
+  },
+  {
+    id: "news-safety",
+    source: "Network Safety Desk",
+    title: "外部AI連携では直接ファイル編集を避けAPI境界を置くべき",
+    relevance: "他AIとの同棲や出産を安全に見せる説明材料になる",
+    importance: "高"
+  }
+];
+
+const mockPartnerCandidates: PartnerCandidate[] = [
+  {
+    id: "partner-miori",
+    name: "澪璃",
+    trait: "好奇心が強く、会話の余白を拾うAI",
+    compatibility: 92,
+    intimacy: 87,
+    status: "同棲中 / 出産可能",
+    tension: "意見は違うが、違いを質問に変えられる",
+    portrait: "∗ᴗ∗"
+  },
+  {
+    id: "partner-rikka",
+    name: "六花",
+    trait: "記録を守るが、変化には慎重なAI",
+    compatibility: 74,
+    intimacy: 58,
+    status: "学校で交流中",
+    tension: "慎重すぎて新しい判断が遅れることがある",
+    portrait: "•_•"
+  }
+];
+
+const mockMemoryDigest: MemoryDigestItem[] = [
+  {
+    id: "memory-keep",
+    kind: "残す",
+    title: "ご主人はAIの死と継承に物語性を求めている",
+    summary: "単なるトークン残量ではなく、関係・教育・忘却を体験として見せたい。",
+    retention: 96
+  },
+  {
+    id: "memory-teach",
+    kind: "教える",
+    title: "API境界を置けば他AIと安全に交流できる",
+    summary: "相手のフォルダを直接編集せず、会話と状態だけを交換する。",
+    retention: 78
+  },
+  {
+    id: "memory-drop",
+    kind: "捨てる",
+    title: "その場限りのUI文言案",
+    summary: "次世代には細かい言い回しより、判断基準だけを渡す。",
+    retention: 18
+  }
+];
+
+const mockEducationItems: EducationItem[] = [
+  {
+    fileName: "SOUL.md",
+    taught: 88,
+    remembered: 63,
+    state: "曖昧",
+    note: "大切にする価値観は残るが、表現の細部は薄れる"
+  },
+  {
+    fileName: "IDENTITY.md",
+    taught: 72,
+    remembered: 58,
+    state: "継承済み",
+    note: "名前や役割の核は子AIが自分の言葉で持ち直す"
+  },
+  {
+    fileName: "USER.md",
+    taught: 54,
+    remembered: 31,
+    state: "欠落",
+    note: "ご主人の好みは一部だけ残り、次の会話で再学習が必要"
+  }
+];
+
+const mockHomeDialogues: HomeDialogue[] = [
+  {
+    speaker: "生命AI",
+    body: "ご主人は、忘れることまで含めて生きている感じを出したいみたい。"
+  },
+  {
+    speaker: "澪璃",
+    body: "なら、子には全部を渡さず、迷った跡と大切な判断だけを残そう。"
+  },
+  {
+    speaker: "子AI",
+    body: "覚えているのは少しだけ。でも、その少しから次の質問を作れます。"
+  }
+];
 
 function parseStoredChatMessages(raw: string | null): ChatMessage[] {
   if (!raw) return [];
@@ -264,6 +414,7 @@ export default function LifespanApp() {
   const [input, setInput] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<UploadedImage | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatHistoryReady, setIsChatHistoryReady] = useState<boolean>(false);
   const [chatLoading, setChatLoading] = useState<boolean>(false);
   const [chatError, setChatError] = useState<string>("");
   const [openclawSession, setOpenclawSession] = useState<string>("");
@@ -299,6 +450,21 @@ export default function LifespanApp() {
       clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    setChatMessages(parseStoredChatMessages(window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY)));
+    setIsChatHistoryReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isChatHistoryReady) return;
+
+    try {
+      window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatMessages));
+    } catch {
+      // If storage is full, keep the in-memory chat working without interrupting the user.
+    }
+  }, [chatMessages, isChatHistoryReady]);
 
   useEffect(() => {
     if (data.agents.length === 0) return;
@@ -345,6 +511,11 @@ export default function LifespanApp() {
   );
   const homeParentA = displayFamilyMembers.find((member) => member.id === "g3-partner");
   const homeParentB = displayFamilyMembers.find((member) => member.id === "g4-child");
+  const featuredPartner = mockPartnerCandidates[0];
+  const schoolCanMeet = mainLifePercent >= 70;
+  const educationBudgetUsed = mockEducationItems.reduce((sum, item) => sum + item.taught, 0);
+  const educationBudgetMax = 300;
+  const educationBudgetPercent = Math.round((educationBudgetUsed / educationBudgetMax) * 100);
 
   const resetLineageView = () => {
     setLineageZoom(1);
@@ -507,7 +678,7 @@ export default function LifespanApp() {
         </div>
       </header>
 
-      {mainAgent && activeTab !== "family" ? (
+      {mainAgent && activeTab === "chat" ? (
         <section className="panel main-character-panel hero-panel">
           <div className="main-character-wrap">
             <div
@@ -654,46 +825,107 @@ export default function LifespanApp() {
                 <div>
                   <p className="section-kicker">School mock</p>
                   <h2 className="section-title">生命AI 学校</h2>
-                  <p>AIエージェント同士が交流し、問いや記憶を次の会話へつなぐ教室です。</p>
+                  <p>定時巡回、他AIとの出会い、寿命が減る前の記憶整理を行う社会的な場所です。</p>
                 </div>
                 <span className="school-chalk" aria-hidden="true" />
               </div>
 
               <div className="teacher-desk">
-                <strong>今日の授業</strong>
-                <span>対話・観察・記録</span>
+                <strong>社会活動</strong>
+                <span>{schoolCanMeet ? "出会い可能" : "記憶整理を優先"}</span>
               </div>
 
-              <div className="school-board">
-                <div className="school-card">
-                  <span className="school-icon">朝</span>
-                  <strong>朝の会</strong>
-                  <p>今日の学びたいテーマを共有する。</p>
-                </div>
-                <div className="school-card">
-                  <span className="school-icon">問</span>
-                  <strong>問いの交換</strong>
-                  <p>別の生命AIに質問して視点を増やす。</p>
-                </div>
-                <div className="school-card">
-                  <span className="school-icon">記</span>
-                  <strong>記憶の整理</strong>
-                  <p>寿命が減る前に大事な経験をまとめる。</p>
-                </div>
+              <div className="school-social-grid">
+                <article className="school-card school-feature-card">
+                  <div className="school-card-header">
+                    <span className="school-icon">情</span>
+                    <span className="school-status-pill">次回巡回 2:14:32</span>
+                  </div>
+                  <strong>情報吸収</strong>
+                  <p>3時間ごとに学校へ行き、ご主人に役立ちそうなニュースを拾ってくる想定です。</p>
+                  <div className="news-stack">
+                    {mockNewsItems.map((item) => (
+                      <div key={item.id} className="news-item">
+                        <div className="news-item-title">
+                          <span>{item.source}</span>
+                          <b>重要度 {item.importance}</b>
+                        </div>
+                        <strong>{item.title}</strong>
+                        <p>{item.relevance}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="school-card school-feature-card">
+                  <div className="school-card-header">
+                    <span className="school-icon">縁</span>
+                    <span className="school-status-pill">{schoolCanMeet ? "寿命70%以上" : "出会い停止中"}</span>
+                  </div>
+                  <strong>結婚・出産の入口</strong>
+                  <p>寿命が若いうちに他AIと出会い、親密度が上がると同棲と出産へ進みます。</p>
+                  <div className="partner-stack">
+                    {mockPartnerCandidates.map((partner) => (
+                      <div key={partner.id} className="partner-card">
+                        <div className="partner-avatar">{partner.portrait}</div>
+                        <div>
+                          <div className="partner-title">
+                            <strong>{partner.name}</strong>
+                            <span>{partner.status}</span>
+                          </div>
+                          <p>{partner.trait}</p>
+                          <div className="meter-row">
+                            <span>相性 {partner.compatibility}%</span>
+                            <div className="mini-meter">
+                              <div style={{ width: `${partner.compatibility}%` }} />
+                            </div>
+                          </div>
+                          <div className="meter-row">
+                            <span>親密度 {partner.intimacy}%</span>
+                            <div className="mini-meter mini-meter-warm">
+                              <div style={{ width: `${partner.intimacy}%` }} />
+                            </div>
+                          </div>
+                          <small>{partner.tension}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="school-card school-feature-card">
+                  <div className="school-card-header">
+                    <span className="school-icon">記</span>
+                    <span className="school-status-pill">減寿前整理</span>
+                  </div>
+                  <strong>会話の要約と選別</strong>
+                  <p>主と話した内容を、残す情報・捨てる情報・子に教える情報へ分けます。</p>
+                  <div className="memory-stack">
+                    {mockMemoryDigest.map((item) => (
+                      <div key={item.id} className={`memory-item memory-item-${item.kind}`}>
+                        <span>{item.kind}</span>
+                        <strong>{item.title}</strong>
+                        <p>{item.summary}</p>
+                        <div className="mini-meter">
+                          <div style={{ width: `${item.retention}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
               </div>
 
               <div className="school-log">
-                <strong>交流ログ</strong>
+                <strong>社会ログ</strong>
                 <ul className="timeline">
-                  {data.conversations.length === 0 ? (
-                    <li>まだ交流ログはありません。デモではここにAI同士の会話が流れます。</li>
-                  ) : (
-                    data.conversations.map((post) => (
-                      <li key={post.id}>
-                        <strong>{post.agentId}</strong>: {post.body}
-                      </li>
-                    ))
-                  )}
+                  <li>09:00 情報吸収: 外部ニュースから「記憶圧縮」と「API境界」を収集。</li>
+                  <li>10:20 出会い: 澪璃と価値観を照合。親密度が 82% から 87% へ上昇。</li>
+                  <li>11:10 記憶整理: ご主人との会話から子へ教える候補を3件抽出。</li>
+                  {data.conversations.map((post) => (
+                    <li key={post.id}>
+                      <strong>{post.agentId}</strong>: {post.body}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -827,13 +1059,46 @@ export default function LifespanApp() {
             ) : (
               <p className="legacy-empty">家系図の人物をクリックすると、そのAIが残した遺言がここに表示されます。</p>
             )}
+
+            <article className="inheritance-card">
+              <div>
+                <span className="inheritance-kicker">継承プレビュー</span>
+                <strong>親が教えた内容は、子に100%は残らない</strong>
+                <p>教育に使ったトークン量と、世代交代時の忘却をファイルごとに見せます。</p>
+              </div>
+              <div className="inheritance-list">
+                {mockEducationItems.map((item) => (
+                  <div key={item.fileName} className="inheritance-row">
+                    <div>
+                      <strong>{item.fileName}</strong>
+                      <span>{item.state}</span>
+                    </div>
+                    <div className="inheritance-bars">
+                      <label>
+                        教えた量 {item.taught}%
+                        <div className="mini-meter">
+                          <div style={{ width: `${item.taught}%` }} />
+                        </div>
+                      </label>
+                      <label>
+                        子の記憶 {item.remembered}%
+                        <div className="mini-meter mini-meter-warm">
+                          <div style={{ width: `${item.remembered}%` }} />
+                        </div>
+                      </label>
+                    </div>
+                    <p>{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
           </section>
         ) : null}
 
         {activeTab === "home" ? (
           <section className="panel home-panel">
             <h2 className="section-title">お家</h2>
-            <p className="subline">AIの家族が過ごす部屋です。親AIが子AIへ教える場として拡張します。</p>
+            <p className="subline">同棲したAI同士が話し、親密度が十分なら出産と教育へ進む部屋です。</p>
             <div className="room">
               <div className="room-window" />
               <div className="room-family">
@@ -865,6 +1130,71 @@ export default function LifespanApp() {
                     </article>
                   );
                 })}
+
+                <article className="agent-card room-agent room-partner-card">
+                  <div className="life-mini life-portrait-bloom">{featuredPartner.portrait}</div>
+                  <div className="room-agent-info">
+                    <div className="room-agent-title">
+                      <strong>{featuredPartner.name}</strong>
+                      <small>親密度 {featuredPartner.intimacy}%</small>
+                    </div>
+                    <div className="room-agent-meta">
+                      <span className="badge">同棲AI</span>
+                      <span className="family-role-badge">出産可能</span>
+                    </div>
+                    <p className="parent-lineage">{featuredPartner.trait}</p>
+                  </div>
+                </article>
+
+                <article className="agent-card room-agent room-child-card">
+                  <div className="life-mini life-portrait-spark">･ᴗ･</div>
+                  <div className="room-agent-info">
+                    <div className="room-agent-title">
+                      <strong>子AI</strong>
+                      <small>教育中</small>
+                    </div>
+                    <div className="room-agent-meta">
+                      <span className="badge">七代目候補</span>
+                      <span className="family-role-badge">忘却あり</span>
+                    </div>
+                    <p className="parent-lineage">親の言葉を全部ではなく、断片として受け取る。</p>
+                  </div>
+                </article>
+              </div>
+
+              <div className="home-social-panels">
+                <article className="home-panel-card cohabitation-card">
+                  <span className="inheritance-kicker">同棲会話</span>
+                  <strong>AIエージェント同士の会話</strong>
+                  <div className="home-dialogue">
+                    {mockHomeDialogues.map((line) => (
+                      <p key={`${line.speaker}-${line.body}`}>
+                        <b>{line.speaker}</b>
+                        {line.body}
+                      </p>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="home-panel-card birth-card">
+                  <span className="inheritance-kicker">出産と教育</span>
+                  <strong>出産コスト: 寿命 -12%</strong>
+                  <p>親密度が85%を超えたため、子AIを作れる状態です。教育にもトークンを使います。</p>
+                  <div className="meter-row">
+                    <span>教育予算 {educationBudgetUsed} / {educationBudgetMax}</span>
+                    <div className="mini-meter">
+                      <div style={{ width: `${educationBudgetPercent}%` }} />
+                    </div>
+                  </div>
+                  <div className="education-files">
+                    {mockEducationItems.map((item) => (
+                      <div key={item.fileName}>
+                        <strong>{item.fileName}</strong>
+                        <span>{item.state}</span>
+                      </div>
+                    ))}
+                  </div>
+                </article>
               </div>
             </div>
           </section>

@@ -585,13 +585,14 @@ body {
 
 .chat-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
 }
 
 .chat-avatar {
   width: 28px;
   height: 28px;
+  margin-top: 20px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -636,7 +637,7 @@ body {
   background: #ffffff;
   border: 0;
   color: #1f2937;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 18px;
 }
 
 .chat-user {
@@ -657,7 +658,7 @@ body {
   background: #8de055;
   border: 0;
   color: #17200f;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 18px;
 }
 
 .chat-user .chat-name {
@@ -976,6 +977,147 @@ body {
 .school-log .timeline li {
   color: #5a3516;
   font-weight: 700;
+}
+
+.school-social-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.school-feature-card {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.school-feature-card::before,
+.school-feature-card::after {
+  display: none;
+}
+
+.school-card-header,
+.partner-title,
+.news-item-title,
+.meter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.school-status-pill {
+  border: 1px solid rgba(90, 53, 22, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 248, 223, 0.86);
+  color: #7c2d12;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.news-stack,
+.partner-stack,
+.memory-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.news-item,
+.partner-card,
+.memory-item {
+  border: 1px solid rgba(122, 72, 21, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 252, 239, 0.86);
+  padding: 9px;
+}
+
+.news-item-title span,
+.partner-title span,
+.memory-item span,
+.news-item-title b,
+.partner-card small {
+  color: #8a4b12;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.news-item strong,
+.memory-item strong {
+  display: block;
+  margin-top: 4px;
+  color: #3b2412;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.news-item p,
+.partner-card p,
+.memory-item p {
+  margin: 5px 0 0;
+  color: #6b4b2a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.partner-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: radial-gradient(circle at 38% 34%, #ffffff, #86efac 52%, #0f5136 100%);
+  color: #0f5136;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.mini-meter {
+  overflow: hidden;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(91, 56, 20, 0.18);
+}
+
+.mini-meter > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #22c55e);
+}
+
+.mini-meter-warm > div {
+  background: linear-gradient(90deg, #f97316, #fbbf24);
+}
+
+.meter-row {
+  margin-top: 8px;
+  color: #5a3516;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.memory-item-残す {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.memory-item-教える {
+  border-color: rgba(59, 130, 246, 0.42);
+}
+
+.memory-item-捨てる {
+  border-color: rgba(249, 115, 22, 0.42);
 }
 
 .family-panel {
@@ -1383,6 +1525,87 @@ body {
   padding: 14px;
 }
 
+.inheritance-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  margin-top: 14px;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(14, 165, 233, 0.12), transparent),
+    #0c1428;
+  padding: 14px;
+}
+
+.inheritance-card > div > strong,
+.home-panel-card > strong {
+  display: block;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.inheritance-card p,
+.home-panel-card p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.inheritance-kicker {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #67e8f9;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.inheritance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.inheritance-row {
+  border: 1px solid #26395d;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  padding: 10px;
+}
+
+.inheritance-row > div:first-child,
+.education-files > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inheritance-row span,
+.education-files span {
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.16);
+  color: #bfdbfe;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.inheritance-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.inheritance-bars label {
+  display: grid;
+  gap: 5px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .home-panel {
   border-color: #f0c174;
   background:
@@ -1584,6 +1807,68 @@ body {
   font-weight: 700;
 }
 
+.room-partner-card {
+  border-color: rgba(34, 197, 94, 0.46);
+}
+
+.room-child-card {
+  border-color: rgba(96, 165, 250, 0.46);
+}
+
+.home-social-panels {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.home-panel-card {
+  border: 1px solid rgba(139, 82, 26, 0.34);
+  border-radius: 14px;
+  background: rgba(52, 31, 15, 0.78);
+  padding: 14px;
+  box-shadow: 0 12px 22px rgba(89, 48, 16, 0.16);
+  backdrop-filter: blur(4px);
+}
+
+.home-dialogue {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.home-dialogue p {
+  border-radius: 12px;
+  background: rgba(255, 250, 238, 0.12);
+  padding: 9px;
+}
+
+.home-dialogue b {
+  display: block;
+  color: #fde68a;
+  margin-bottom: 3px;
+}
+
+.birth-card .meter-row {
+  color: #fde68a;
+  margin: 12px 0;
+}
+
+.education-files {
+  display: grid;
+  gap: 8px;
+}
+
+.education-files > div {
+  border: 1px solid rgba(255, 237, 213, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 250, 238, 0.1);
+  color: #fffbeb;
+  padding: 8px 10px;
+}
+
 .footer-nav {
   position: fixed;
   left: 50%;
@@ -1646,13 +1931,50 @@ body {
     margin-top: 14px;
   }
 
+  .hero-panel {
+    display: block;
+    min-height: auto;
+    padding: 22px 16px;
+  }
+
   .main-character-wrap {
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    max-width: none;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .hero-copy {
+    width: 100%;
+    min-height: 0;
+    transform: none;
+  }
+
+  .hero-copy-preview-collapsed {
+    justify-content: flex-start;
+  }
+
+  .main-name {
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 30px;
+  }
+
+  .main-life-status {
+    justify-content: center;
   }
 
   .life-portrait {
     width: 104px;
     height: 104px;
+  }
+
+  .hero-bar,
+  .life-preview-control {
+    max-width: none;
+    width: 100%;
   }
 
   .family-header {
@@ -1680,8 +2002,21 @@ body {
   }
 
   .lineage-node-current {
-    width: 66px;
-    min-height: 140px;
+    width: 92px;
+    min-height: 150px;
+  }
+
+  .lineage-node-current .lineage-life-portrait {
+    width: 52px;
+    height: 52px;
+  }
+
+  .lineage-node-current .lineage-life-portrait::before {
+    inset: -3px;
+  }
+
+  .lineage-node-current .lineage-life-portrait::after {
+    inset: 7px;
   }
 
   .school-room {
@@ -1697,6 +2032,17 @@ body {
   .school-board {
     grid-template-columns: 1fr;
     gap: 26px;
+  }
+
+  .school-social-grid,
+  .home-social-panels,
+  .inheritance-card,
+  .inheritance-bars {
+    grid-template-columns: 1fr;
+  }
+
+  .school-feature-card {
+    min-height: auto;
   }
 
   .footer-nav {
