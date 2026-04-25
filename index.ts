@@ -70,6 +70,7 @@ const DEFAULT_LIFESPAN = 30_000; // output tokens (~150-300 conversational turns
 const OPENCLAW_DIR =
   process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw");
 const WORKSPACE_DIR = path.join(OPENCLAW_DIR, "workspace");
+const SESSIONS_FILE = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
 
 const CLEARABLE_FILES = ["IDENTITY.md", "SOUL.md", "USER.md"];
 
@@ -110,27 +111,31 @@ function clearPersonality(): void {
     const filePath = path.join(WORKSPACE_DIR, name);
     try {
       fs.writeFileSync(filePath, "", "utf-8");
-    } catch {
-      // ignore if workspace doesn't exist
+    } catch (err) {
+      console.error(`[lifespan] failed to clear ${name}:`, err);
     }
   }
 
   // Truncate all agent session histories to their header line only.
   // Without this the agent can recover its identity from conversation context.
   try {
-    const sessionsFile = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
-    const raw = fs.readFileSync(sessionsFile, "utf-8");
+    const raw = fs.readFileSync(SESSIONS_FILE, "utf-8");
     const sessions = JSON.parse(raw) as Record<string, unknown>;
     for (const info of Object.values(sessions)) {
-      const sessionFile = (info as Record<string, unknown>).sessionFile;
+      if (typeof info !== "object" || info === null) continue;
+      const { sessionFile } = info as Record<string, unknown>;
       if (typeof sessionFile !== "string" || !fs.existsSync(sessionFile)) continue;
-      const content = fs.readFileSync(sessionFile, "utf-8");
-      const firstNewline = content.indexOf("\n");
-      const header = firstNewline >= 0 ? content.slice(0, firstNewline + 1) : content;
-      fs.writeFileSync(sessionFile, header);
+      try {
+        const content = fs.readFileSync(sessionFile, "utf-8");
+        const firstNewline = content.indexOf("\n");
+        const header = firstNewline >= 0 ? content.slice(0, firstNewline + 1) : content;
+        fs.writeFileSync(sessionFile, header);
+      } catch (err) {
+        console.error(`[lifespan] failed to truncate session file ${sessionFile}:`, err);
+      }
     }
-  } catch {
-    // ignore session clearing errors
+  } catch (err) {
+    console.error("[lifespan] failed to read sessions file:", err);
   }
 }
 
