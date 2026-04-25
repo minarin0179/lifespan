@@ -17,7 +17,7 @@ An OpenClaw plugin that gives your AI agent a finite lifespan measured in output
 - When lifespan hits 0:
   - `IDENTITY.md`, `SOUL.md`, and `USER.md` in the OpenClaw workspace are cleared
   - All session histories are truncated to their header line (prevents identity recovery from context)
-  - Every subsequent reply is blocked
+  - Every subsequent reply is blocked; a death notification is shown to the user instead
 
 ## Requirements
 
@@ -51,21 +51,30 @@ This plugin itself does not call any LLM API — OpenClaw handles that. Configur
 
 ## Usage
 
-Once installed, the plugin runs automatically. No configuration is required.
+Once installed, the plugin runs automatically.
+
+### Configuration
+
+You can set the initial lifespan via OpenClaw's plugin settings:
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `initialLifespan` | `number` | `30000` | Initial lifespan in output tokens |
 
 ### Slash commands
 
 | Command | Description |
 |---|---|
 | `/lifespan` | Show current lifespan (tokens remaining and percentage) |
-| `/lifespan-reset` | Reset lifespan to the default value (does **not** restore personality files) |
+| `/lifespan-reset` | Reset lifespan to the configured initial value (does **not** restore personality files) |
+| `/lifespan-set <n>` | Set lifespan to an arbitrary token count (also clears the `dead` flag) |
 
 ### Tools (callable by the agent)
 
 | Tool | Description |
 |---|---|
 | `lifespan_show` | Show current lifespan |
-| `lifespan_reset` | Reset lifespan to default |
+| `lifespan_reset` | Reset lifespan to the configured initial value |
 
 ### Lifespan data
 
@@ -104,6 +113,7 @@ openclaw plugins install /path/to/lifespan --force && pkill -f "openclaw-gateway
 
 ```bash
 npm run check   # type-check
+npm test        # run unit tests
 npm run build   # compile to dist/
 npm run dev     # type-check in watch mode
 tail -f /tmp/openclaw.log   # gateway logs

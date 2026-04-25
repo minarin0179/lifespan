@@ -36,6 +36,9 @@ openclaw plugins install /home/lifespan --force && pkill -f "openclaw-gateway" &
 # 型チェック
 npm run check
 
+# 単体テスト実行
+npm test
+
 # ビルド (dist/ に出力)
 npm run build
 
@@ -60,7 +63,15 @@ OpenClaw プラグインは 3 つのファイルが必須:
 |---|---|
 | `openclaw.plugin.json` | プラグイン ID・名前・設定スキーマ |
 | `package.json` の `openclaw.extensions` | エントリポイントのパス指定 |
-| `index.ts` | `definePluginEntry` でエクスポートするエントリポイント |
+| `index.ts` | `export default { id, name, description, register(api) }` 形式のエントリポイント |
+
+このプラグインでは純粋関数を `lib.ts` に分離し、`index.ts` からインポートしている。
+テストは `lib.test.ts` に記述（`node:test` + `tsx`）。
+
+### SDK 型定義について
+
+`openclaw/plugin-sdk` は外部プラグイン向けに `.d.ts` ファイルを提供していない。
+そのため `index.ts` の冒頭にローカルインターフェース（`PluginApi`・`SessionMessage` 等）を定義して `any` を回避している。
 
 ## プラグイン種別とインポートパス
 
@@ -71,6 +82,18 @@ OpenClaw プラグインは 3 つのファイルが必須:
 | Tool / Hook | `openclaw/plugin-sdk/plugin-entry` |
 | Channel | `openclaw/plugin-sdk/channel` |
 | Provider (LLM 等) | `openclaw/plugin-sdk/provider` |
+
+`api.pluginConfig` でプラグイン設定値を読める（`openclaw.plugin.json` の `configSchema` で定義した値）。
+
+## フックの戻り値
+
+| フック | 戻り値フィールド | 効果 |
+|---|---|---|
+| `before_prompt_build` | `prependSystemContext` / `appendSystemContext` | システムプロンプトの先頭・末尾に文字列を追加 |
+| `before_agent_reply` | `handled: true` | エージェントの返答をブロック |
+| `before_agent_reply` | `handled: true, reply: { text }` | ブロックしつつユーザーに代替テキストを表示 |
+
+`before_agent_reply` で `handled: true` のみ返すとユーザーには何も表示されないため、死亡通知などは `reply.text` を使う。
 
 ## ツール登録の注意
 

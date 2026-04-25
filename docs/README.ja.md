@@ -18,7 +18,7 @@ AI エージェントにアウトプットトークン数で計測される「�
 - 寿命がゼロになると：
   - OpenClaw ワークスペースの `IDENTITY.md`・`SOUL.md`・`USER.md` をクリア
   - 全セッション履歴をヘッダー行のみに切り詰め（文脈からの人格復元を防止）
-  - 以降の返答をすべてブロック
+  - 以降の返答をすべてブロックし、ユーザーには死亡通知メッセージを表示
 
 ## 必要なもの
 
@@ -52,21 +52,30 @@ openclaw plugins install . --force
 
 ## 使い方
 
-インストール後は自動で動作します。追加設定は不要です。
+インストール後は自動で動作します。
+
+### 設定
+
+OpenClaw のプラグイン設定から初期寿命を変更できます：
+
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| `initialLifespan` | `number` | `30000` | 初期寿命（アウトプットトークン数） |
 
 ### スラッシュコマンド
 
 | コマンド | 説明 |
 |---|---|
 | `/lifespan` | 現在の寿命（残りトークン数とパーセンテージ）を表示 |
-| `/lifespan-reset` | 寿命をデフォルト値にリセット（人格ファイルは復元されない） |
+| `/lifespan-reset` | 寿命を設定した初期値にリセット（人格ファイルは復元されない） |
+| `/lifespan-set <n>` | 寿命を任意のトークン数に設定（`dead` フラグもリセット） |
 
 ### ツール（エージェントが呼び出せる）
 
 | ツール | 説明 |
 |---|---|
 | `lifespan_show` | 現在の寿命を表示 |
-| `lifespan_reset` | 寿命をデフォルト値にリセット |
+| `lifespan_reset` | 寿命を設定した初期値にリセット |
 
 ### 寿命データ
 
@@ -105,6 +114,7 @@ openclaw plugins install /path/to/lifespan --force && pkill -f "openclaw-gateway
 
 ```bash
 npm run check   # 型チェック
+npm test        # 単体テスト実行
 npm run build   # dist/ にコンパイル
 npm run dev     # 型チェックをウォッチモードで実行
 tail -f /tmp/openclaw.log          # ゲートウェイのログ確認
