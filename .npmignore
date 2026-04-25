@@ -1,0 +1,14 @@
+# Development environment
+.claude/
+.devcontainer/
+CLAUDE.md
+tsconfig.json
+
+# Build artifacts & deps
+node_modules/
+dist/
+*.js
+
+# Secrets
+.env
+.env.*
