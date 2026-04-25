@@ -32,12 +32,6 @@ interface MessageWriteEvent {
   message?: SessionMessage;
 }
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: { type: "object"; properties: Record<string, unknown>; required: string[] };
-  execute(toolCallId: string, params: Record<string, never>): Promise<string>;
-}
 
 interface CommandContext {
   args?: string;
@@ -60,7 +54,6 @@ interface PluginApi {
   on(event: "before_prompt_build", handler: (event: unknown) => PromptMutationResult | void, meta?: HookMeta): void;
   on(event: "before_agent_reply", handler: (event: unknown) => BlockReplyResult | void, meta?: HookMeta): void;
   on(event: "before_message_write", handler: (event: MessageWriteEvent) => void, meta?: HookMeta): void;
-  registerTool(tool: ToolDefinition): void;
   registerCommand(command: CommandDefinition): void;
 }
 
@@ -182,30 +175,6 @@ export default {
       if (!message || message.role !== "assistant") return;
       consume(extractOutputTokensOrChars(message));
     }, { name: "lifespan-before-write", description: "アシスタントメッセージ書き込み前にトークン/文字数で寿命を消費する" });
-
-    // --- Tools ---
-
-    api.registerTool({
-      name: "lifespan_show",
-      description: "現在の寿命の値を表示する",
-      parameters: { type: "object", properties: {}, required: [] },
-      async execute(_toolCallId: string, _params: Record<string, never>) {
-        const data = load();
-        if (data.dead) return "寿命が尽きました。人格ファイルはクリアされています。";
-        const pct = Math.round((data.lifespan / initialLifespan) * 100);
-        return `現在の寿命: ${data.lifespan.toLocaleString()} トークン (${pct}%)`;
-      },
-    });
-
-    api.registerTool({
-      name: "lifespan_reset",
-      description: "寿命をデフォルト値にリセットする（人格ファイルは復元されない）",
-      parameters: { type: "object", properties: {}, required: [] },
-      async execute(_toolCallId: string, _params: Record<string, never>) {
-        save({ lifespan: initialLifespan, dead: false });
-        return `寿命をリセットしました: ${initialLifespan.toLocaleString()} トークン`;
-      },
-    });
 
     // --- Slash commands ---
 
