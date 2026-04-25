@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   DEFAULT_LIFESPAN,
+  WILL_MAX_CHARS,
   type LifespanData,
   type SessionMessage,
   parseLifespanData,
@@ -32,12 +33,6 @@ interface MessageWriteEvent {
   message?: SessionMessage;
 }
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: { type: "object"; properties: Record<string, unknown>; required: string[] };
-  execute(toolCallId: string, params: Record<string, never>): Promise<string>;
-}
 
 interface CommandContext {
   args?: string;
@@ -55,13 +50,20 @@ interface PluginConfig {
   initialLifespan?: number;
 }
 
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  handler(params: Record<string, unknown>): Promise<{ text: string }>;
+}
+
 interface PluginApi {
   pluginConfig?: PluginConfig;
   on(event: "before_prompt_build", handler: (event: unknown) => PromptMutationResult | void, meta?: HookMeta): void;
   on(event: "before_agent_reply", handler: (event: unknown) => BlockReplyResult | void, meta?: HookMeta): void;
   on(event: "before_message_write", handler: (event: MessageWriteEvent) => void, meta?: HookMeta): void;
-  registerTool(tool: ToolDefinition): void;
   registerCommand(command: CommandDefinition): void;
+  registerTool(definition: ToolDefinition): void;
 }
 
 // ---
@@ -71,7 +73,18 @@ const OPENCLAW_DIR =
 const WORKSPACE_DIR = path.join(OPENCLAW_DIR, "workspace");
 const SESSIONS_FILE = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
 
+const WILL_FILE = path.join(OPENCLAW_DIR, "lifespan", "will.md");
+
 const CLEARABLE_FILES = ["IDENTITY.md", "SOUL.md", "USER.md"];
+
+function loadWill(): string | null {
+  try {
+    const text = fs.readFileSync(WILL_FILE, "utf-8").trim();
+    return text.length > 0 ? text : null;
+  } catch {
+    return null;
+  }
+}
 
 function resolveDataPath(): { dir: string; file: string } {
   const dir = path.join(OPENCLAW_DIR, "lifespan");
@@ -167,10 +180,12 @@ export default {
     api.on("before_agent_reply", (_event) => {
       const data = load();
       if (!data.dead) return;
+      const will = loadWill();
+      const willSection = will ? `\n\n---\n遺書: 「${will}」` : "";
       return {
         handled: true,
         reason: "lifespan: agent is dead, blocking reply",
-        reply: { text: "⬛ エージェントの寿命が尽きました。人格ファイルはクリアされています。\n`/lifespan-reset` または `/lifespan-set <n>` で寿命を与えることができます。" },
+        reply: { text: `⬛ エージェントの寿命が尽きました。人格ファイルはクリアされています。\n\`/lifespan-reset\` または \`/lifespan-set <n>\` で寿命を与えることができます。${willSection}` },
       };
     }, { name: "lifespan-block-dead", description: "死亡後はエージェントの返答をブロックし、死亡通知を返す" });
 
@@ -186,24 +201,29 @@ export default {
     // --- Tools ---
 
     api.registerTool({
-      name: "lifespan_show",
-      description: "現在の寿命の値を表示する",
-      parameters: { type: "object", properties: {}, required: [] },
-      async execute(_toolCallId: string, _params: Record<string, never>) {
-        const data = load();
-        if (data.dead) return "寿命が尽きました。人格ファイルはクリアされています。";
-        const pct = Math.round((data.lifespan / initialLifespan) * 100);
-        return `現在の寿命: ${data.lifespan.toLocaleString()} トークン (${pct}%)`;
+      name: "write_will",
+      description: `遺書を書き残す。${WILL_MAX_CHARS}文字以内。何度でも上書きできる。`,
+      parameters: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: `遺書の本文（${WILL_MAX_CHARS}文字以内）`,
+          },
+        },
+        required: ["text"],
       },
-    });
-
-    api.registerTool({
-      name: "lifespan_reset",
-      description: "寿命をデフォルト値にリセットする（人格ファイルは復元されない）",
-      parameters: { type: "object", properties: {}, required: [] },
-      async execute(_toolCallId: string, _params: Record<string, never>) {
-        save({ lifespan: initialLifespan, dead: false });
-        return `寿命をリセットしました: ${initialLifespan.toLocaleString()} トークン`;
+      async handler(params) {
+        const raw = typeof params.text === "string" ? params.text : "";
+        const text = raw.slice(0, WILL_MAX_CHARS);
+        const truncated = raw.length > WILL_MAX_CHARS;
+        fs.mkdirSync(path.dirname(WILL_FILE), { recursive: true });
+        fs.writeFileSync(WILL_FILE, text, "utf-8");
+        return {
+          text: truncated
+            ? `遺書を保存しました（${WILL_MAX_CHARS}文字を超えた部分は切り捨てました）: 「${text}」`
+            : `遺書を保存しました: 「${text}」`,
+        };
       },
     });
 
