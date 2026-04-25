@@ -34,7 +34,7 @@ openclaw plugins install openclaw-lifespan
 その後ゲートウェイを再起動します：
 
 ```bash
-pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+openclaw gateway restart
 ```
 
 ### ソースからインストール

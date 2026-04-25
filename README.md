@@ -15,7 +15,7 @@ openclaw plugins install openclaw-lifespan
 Then restart the gateway:
 
 ```bash
-pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+openclaw gateway restart
 ```
 
 **Documentation:**
