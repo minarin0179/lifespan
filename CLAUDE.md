@@ -26,7 +26,7 @@ npm run dev
 tail -f /tmp/openclaw.log
 
 # プラグインの変更を反映 (コード変更後)
-openclaw plugins install /home/lifespan --force && pkill -f "openclaw gateway run" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+openclaw plugins install /home/lifespan --force && pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
 
 # OpenClaw の死活確認
 curl http://localhost:18789/healthz
@@ -57,9 +57,39 @@ OpenClaw プラグインは 3 つのファイルが必須:
 - `required` ツール: 常に利用可能
 - `optional` ツール: ユーザーが明示的に許可する必要がある。`openclaw.json` の `tools.allow` にツール名を追加
 
+## スラッシュコマンド登録
+
+`registerCommand` でダッシュボードの `/コマンド名` から直接呼び出せるコマンドを登録できる。
+
+```ts
+api.registerCommand({
+  name: "my-command",       // /my-command で呼び出し
+  description: "説明",
+  acceptsArgs: true,        // /my-command <args> の形式を受け付けるか
+  requireAuth: false,
+  async handler(ctx) {
+    const args = ctx.args;  // コマンド名以降の文字列
+    return { text: "応答テキスト" };
+  }
+});
+```
+
+- コマンド名は `^[a-z][a-z0-9_-]*$` の形式のみ有効
+- `help`, `stop`, `reset`, `config` など予約済み名は使用不可
+
 ## devcontainer のライフサイクル
 
-- **初回作成時** (`postCreateCommand`): `npm install` → `openclaw config set gateway.mode local` → `openclaw plugins install /home/lifespan` でプラグイン登録
+- **初回作成時** (`postCreateCommand`): `npm install --include=dev` → `openclaw config set gateway.mode local` → `openclaw plugins install /home/lifespan` でプラグイン登録
 - **起動のたびに** (`postStartCommand`): `nohup openclaw gateway run` がバックグラウンドで起動（systemd 非対応のため）
 - プラグインコードを変更しても自動リロードはない。上記「プラグインの変更を反映」コマンドで手動反映
 - `openclaw gateway restart` は systemd 前提のため使用不可
+
+## 依存パッケージのインストール
+
+ベースイメージで `NODE_ENV=production` が設定されているため、`npm install` のみでは devDependencies がインストールされない。
+devcontainer の `remoteEnv` で `NODE_ENV=development` に上書き済みだが、現行コンテナへの反映はコンテナ再作成後。
+
+```bash
+# 現行コンテナで devDependencies をインストールする場合
+npm install --include=dev
+```

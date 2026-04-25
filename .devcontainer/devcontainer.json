@@ -19,9 +19,12 @@
 
   // ホスト ~/.claude が root 所有 (600) のためコンテナも root で実行
   "remoteUser": "root",
+  "remoteEnv": {
+    "NODE_ENV": "development"
+  },
 
   // 初回作成時: 依存インストール + gateway.mode 設定 + ローカルプラグインを OpenClaw に登録
-  "postCreateCommand": "npm install --prefix ${containerWorkspaceFolder} && openclaw config set gateway.mode local && openclaw plugins install ${containerWorkspaceFolder}",
+  "postCreateCommand": "npm install --include=dev --prefix ${containerWorkspaceFolder} && openclaw config set gateway.mode local && openclaw plugins install ${containerWorkspaceFolder}",
 
   // liveness (18789) / readiness (18790) ポートを転送
   "forwardPorts": [18789, 18790],
