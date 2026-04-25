@@ -25,6 +25,7 @@ interface PromptMutationResult {
 interface BlockReplyResult {
   handled: boolean;
   reason: string;
+  reply?: { text: string };
 }
 
 interface MessageWriteEvent {
@@ -162,10 +163,16 @@ export default {
 
     // before_agent_reply fires before the agent sends a reply.
     // When dead, block all replies so the agent cannot recover its identity via BOOTSTRAP.md.
+    // reply.text is shown to the user in place of the blocked agent response.
     api.on("before_agent_reply", (_event) => {
       const data = load();
-      if (data.dead) return { handled: true, reason: "lifespan: agent is dead, blocking reply" };
-    }, { name: "lifespan-block-dead", description: "死亡後はエージェントの返答をブロックする" });
+      if (!data.dead) return;
+      return {
+        handled: true,
+        reason: "lifespan: agent is dead, blocking reply",
+        reply: { text: "⬛ エージェントの寿命が尽きました。人格ファイルはクリアされています。\n`/lifespan-reset` または `/lifespan-set <n>` で寿命を与えることができます。" },
+      };
+    }, { name: "lifespan-block-dead", description: "死亡後はエージェントの返答をブロックし、死亡通知を返す" });
 
     // before_message_write fires for every session message (user + assistant).
     // Only count assistant messages — they carry usage.totalTokens from the LLM call.
