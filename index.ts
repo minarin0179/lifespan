@@ -41,6 +41,7 @@ function saveData(dir: string, filePath: string, data: LifespanData): void {
 }
 
 function clearPersonality(): void {
+  // Clear workspace personality files
   for (const name of CLEARABLE_FILES) {
     const filePath = path.join(WORKSPACE_DIR, name);
     try {
@@ -48,6 +49,24 @@ function clearPersonality(): void {
     } catch {
       // ignore if workspace doesn't exist
     }
+  }
+
+  // Truncate all agent session histories to their header line only.
+  // Without this the agent can recover its identity from conversation context.
+  try {
+    const sessionsFile = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
+    const raw = fs.readFileSync(sessionsFile, "utf-8");
+    const sessions = JSON.parse(raw) as Record<string, unknown>;
+    for (const info of Object.values(sessions)) {
+      const sessionFile = (info as Record<string, unknown>).sessionFile;
+      if (typeof sessionFile !== "string" || !fs.existsSync(sessionFile)) continue;
+      const content = fs.readFileSync(sessionFile, "utf-8");
+      const firstNewline = content.indexOf("\n");
+      const header = firstNewline >= 0 ? content.slice(0, firstNewline + 1) : content;
+      fs.writeFileSync(sessionFile, header);
+    }
+  } catch {
+    // ignore session clearing errors
   }
 }
 
@@ -104,6 +123,13 @@ export default {
         save(data);
       }
     }
+
+    // before_agent_reply fires before the agent sends a reply.
+    // When dead, block all replies so the agent cannot recover its identity via BOOTSTRAP.md.
+    api.on("before_agent_reply", (_event: any) => {
+      const data = load();
+      if (data.dead) return { handled: true, reason: "lifespan: agent is dead, blocking reply" };
+    }, { name: "lifespan-block-dead", description: "死亡後はエージェントの返答をブロックする" });
 
     // before_message_write fires for every session message (user + assistant).
     // Only count assistant messages — they carry usage.totalTokens from the LLM call.
