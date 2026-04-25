@@ -30,6 +30,9 @@ git clone https://github.com/minarin0179/lifespan.git
 cd lifespan
 npm install --include=dev
 openclaw plugins install . --force
+
+# Or, once published to npm:
+# openclaw plugins install openclaw-lifespan
 ```
 
 Then restart the gateway:

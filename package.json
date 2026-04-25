@@ -1,7 +1,14 @@
 {
-  "name": "lifespan",
+  "name": "openclaw-lifespan",
   "version": "0.1.0",
-  "private": true,
+  "description": "OpenClaw plugin that gives your AI agent a finite lifespan measured in output tokens",
+  "author": "minarin0179",
+  "license": "MIT",
+  "keywords": ["openclaw", "openclaw-plugin", "lifespan", "agent"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/minarin0179/lifespan.git"
+  },
   "openclaw": {
     "extensions": [
       "./index.ts"

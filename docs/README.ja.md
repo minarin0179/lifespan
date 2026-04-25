@@ -31,6 +31,9 @@ git clone https://github.com/minarin0179/lifespan.git
 cd lifespan
 npm install --include=dev
 openclaw plugins install . --force
+
+# npm 公開後はこちらでもインストール可能:
+# openclaw plugins install openclaw-lifespan
 ```
 
 その後ゲートウェイを再起動します：
