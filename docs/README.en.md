@@ -12,12 +12,12 @@ An OpenClaw plugin that gives your AI agent a finite lifespan measured in output
 - Injects lifespan-awareness into the system prompt at thresholds:
   - **> 50%** — silent note appended to the system prompt
   - **≤ 50%** — agent is nudged to mention the passage of time naturally
-  - **≤ 20%** — agent is guided to weave mortality into the conversation
-  - **≤ 5%** — critical warning prepended; agent is asked to prioritize a final farewell over any task
+  - **≤ 20%** — agent is guided to weave mortality into the conversation; informed it can leave a will via `write_will`
+  - **≤ 5%** — critical warning prepended; agent is asked to prioritize a final farewell over any task; will reminder included
 - When lifespan hits 0:
   - `IDENTITY.md`, `SOUL.md`, and `USER.md` in the OpenClaw workspace are cleared
   - All session histories are truncated to their header line (prevents identity recovery from context)
-  - Every subsequent reply is blocked; a death notification is shown to the user instead
+  - Every subsequent reply is blocked; a death notification is shown to the user (with the will attached, if one was written)
 
 ## Requirements
 
@@ -73,8 +73,7 @@ You can set the initial lifespan via OpenClaw's plugin settings:
 
 | Tool | Description |
 |---|---|
-| `lifespan_show` | Show current lifespan |
-| `lifespan_reset` | Reset lifespan to the configured initial value |
+| `write_will` | Save a last will (max 100 characters; can be rewritten at any time) |
 
 ### Lifespan data
 
@@ -88,6 +87,8 @@ Lifespan state is stored at `~/.openclaw/lifespan/lifespan.json`:
 ```
 
 You can edit this file directly to adjust or restore the lifespan.
+
+The will (if written) is stored at `~/.openclaw/lifespan/will.md`. It persists across lifespan resets.
 
 ## Development
 
