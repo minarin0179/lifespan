@@ -1,6 +1,70 @@
 import fs from "node:fs";
 import path from "node:path";
 
+// --- Plugin API types (openclaw/plugin-sdk ships no .d.ts for external plugins) ---
+
+interface HookMeta {
+  name: string;
+  description: string;
+}
+
+interface PromptMutationResult {
+  prependSystemContext?: string;
+  appendSystemContext?: string;
+}
+
+interface BlockReplyResult {
+  handled: boolean;
+  reason: string;
+}
+
+interface MessageUsage {
+  output?: number;
+}
+
+interface MessageContentBlock {
+  text?: string;
+}
+
+interface SessionMessage {
+  role?: string;
+  usage?: MessageUsage;
+  content?: MessageContentBlock[] | string;
+}
+
+interface MessageWriteEvent {
+  message?: SessionMessage;
+}
+
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: { type: "object"; properties: Record<string, unknown>; required: string[] };
+  execute(toolCallId: string, params: Record<string, never>): Promise<string>;
+}
+
+interface CommandContext {
+  args?: string;
+}
+
+interface CommandDefinition {
+  name: string;
+  description: string;
+  acceptsArgs: boolean;
+  requireAuth: boolean;
+  handler(ctx?: CommandContext): Promise<{ text: string }>;
+}
+
+interface PluginApi {
+  on(event: "before_prompt_build", handler: (event: unknown) => PromptMutationResult | void, meta?: HookMeta): void;
+  on(event: "before_agent_reply", handler: (event: unknown) => BlockReplyResult | void, meta?: HookMeta): void;
+  on(event: "before_message_write", handler: (event: MessageWriteEvent) => void, meta?: HookMeta): void;
+  registerTool(tool: ToolDefinition): void;
+  registerCommand(command: CommandDefinition): void;
+}
+
+// ---
+
 const DEFAULT_LIFESPAN = 30_000; // output tokens (~150-300 conversational turns)
 
 const OPENCLAW_DIR =
@@ -70,27 +134,16 @@ function clearPersonality(): void {
   }
 }
 
-function extractOutputTokensOrChars(message: unknown): number {
-  if (typeof message !== "object" || message === null) return 0;
-  const msg = message as Record<string, unknown>;
-
+function extractOutputTokensOrChars(message: SessionMessage): number {
   // Use only output tokens — input contains the entire conversation history
   // which grows with each turn and would cause compounding overcounting.
-  const usage = msg.usage as Record<string, unknown> | undefined;
-  if (usage && typeof usage.output === "number" && usage.output > 0) {
-    return usage.output;
-  }
+  const output = message.usage?.output;
+  if (typeof output === "number" && output > 0) return output;
 
   // Fallback: character count of output text (provider doesn't report tokens)
-  const content = msg.content;
+  const { content } = message;
   if (Array.isArray(content)) {
-    return content.reduce((sum: number, block: unknown) => {
-      if (typeof block === "object" && block !== null) {
-        const b = block as Record<string, unknown>;
-        if (typeof b.text === "string") return sum + b.text.length;
-      }
-      return sum;
-    }, 0);
+    return content.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
   }
   if (typeof content === "string") return content.length;
   return 0;
@@ -100,7 +153,7 @@ export default {
   id: "lifespan",
   name: "Lifespan",
   description: "LLM応答ごとにトークン数で寿命が減り、尽きると人格ファイルをクリアするプラグイン",
-  register(api: any) {
+  register(api: PluginApi) {
     const { dir, file } = resolveDataPath();
     const load = () => loadData(file);
     const save = (data: LifespanData) => saveData(dir, file, data);
@@ -127,7 +180,7 @@ export default {
     // before_prompt_build fires before every LLM call.
     // Injects lifespan awareness into the system context so the agent knows its remaining life.
     // When lifespan is low, the agent is guided to engage with its mortality in conversation.
-    api.on("before_prompt_build", (_event: any) => {
+    api.on("before_prompt_build", (_event) => {
       const data = load();
       if (data.dead) return;
       const pct = Math.round((data.lifespan / DEFAULT_LIFESPAN) * 100);
@@ -160,7 +213,7 @@ export default {
 
     // before_agent_reply fires before the agent sends a reply.
     // When dead, block all replies so the agent cannot recover its identity via BOOTSTRAP.md.
-    api.on("before_agent_reply", (_event: any) => {
+    api.on("before_agent_reply", (_event) => {
       const data = load();
       if (data.dead) return { handled: true, reason: "lifespan: agent is dead, blocking reply" };
     }, { name: "lifespan-block-dead", description: "死亡後はエージェントの返答をブロックする" });
@@ -168,9 +221,9 @@ export default {
     // before_message_write fires for every session message (user + assistant).
     // Only count assistant messages — they carry usage.totalTokens from the LLM call.
     // This hook does NOT require allowConversationAccess.
-    api.on("before_message_write", (event: any) => {
-      const message = event?.message;
-      if (message?.role !== "assistant") return;
+    api.on("before_message_write", (event) => {
+      const { message } = event;
+      if (!message || message.role !== "assistant") return;
       consume(extractOutputTokensOrChars(message));
     }, { name: "lifespan-before-write", description: "アシスタントメッセージ書き込み前にトークン/文字数で寿命を消費する" });
 
