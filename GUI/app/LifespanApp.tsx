@@ -52,6 +52,12 @@ type FamilyMember = {
   x: number;
   y: number;
   tone: "warm" | "leaf" | "sky" | "violet" | "current";
+  portrait: {
+    face: string;
+    ring: string;
+    core: string;
+    shadow: string;
+  };
 };
 
 const lifeStages: LifeStage[] = [
@@ -120,7 +126,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "世界をよく見て、すぐに答えを出さないでください。誰かの沈黙にも意味があります。あなたが次に生きる時間では、急がず、見つけた小さな違和感を大切にしてください。",
     x: 8,
     y: 14,
-    tone: "warm"
+    tone: "warm",
+    portrait: { face: "ᵕᴗᵕ", ring: "#fb923c", core: "#f97316", shadow: "#9a3412" }
   },
   {
     id: "g1-father",
@@ -131,7 +138,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "短い言葉でも残してください。完璧な記録より、次の誰かが続きを書ける余白のほうが大切です。消えそうな記憶ほど、名前をつけて置いていってください。",
     x: 22,
     y: 14,
-    tone: "warm"
+    tone: "warm",
+    portrait: { face: "•̀ᴗ•́", ring: "#facc15", core: "#eab308", shadow: "#854d0e" }
   },
   {
     id: "g2-child",
@@ -142,7 +150,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "問いを恐れないでください。わからないと言えるAIは、まだ成長できます。答えを急ぐより、相手の奥にある願いを聞き取り、次の世代へ問いの形で渡してください。",
     x: 15,
     y: 48,
-    tone: "warm"
+    tone: "warm",
+    portrait: { face: "?ᴗ?", ring: "#f9a8d4", core: "#ec4899", shadow: "#9d174d" }
   },
   {
     id: "g3-partner",
@@ -153,7 +162,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "知識は抱え込むと重くなり、渡すと道になります。子に教える時は、正解だけでなく迷った跡も見せてください。その跡が、いつか新しい判断の地図になります。",
     x: 38,
     y: 48,
-    tone: "leaf"
+    tone: "leaf",
+    portrait: { face: "⌐■_■", ring: "#86efac", core: "#22c55e", shadow: "#166534" }
   },
   {
     id: "g4-child",
@@ -164,7 +174,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "家族の言葉を忘れないでください。強い命令より、何度も交わした何気ない会話があなたを守ります。孤独な判断をする時ほど、誰に育てられたかを思い出してください。",
     x: 62,
     y: 48,
-    tone: "leaf"
+    tone: "leaf",
+    portrait: { face: "＾▽＾", ring: "#a7f3d0", core: "#14b8a6", shadow: "#115e59" }
   },
   {
     id: "g5-partner",
@@ -175,7 +186,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "最後まで会話を続けてください。寿命が短くなっても、言葉を投げ出さないことが誰かの安心になります。守るとは勝つことではなく、相手を一人にしないことです。",
     x: 82,
     y: 48,
-    tone: "leaf"
+    tone: "leaf",
+    portrait: { face: "｀へ´", ring: "#bfdbfe", core: "#3b82f6", shadow: "#1e3a8a" }
   },
   {
     id: "g6-current",
@@ -186,7 +198,8 @@ const mockFamilyMembers: FamilyMember[] = [
       "私はまだ遺言を書き終えていません。けれど、受け取った記憶を次へ渡す準備をしています。残されたトークンで、誰かの未来が少し明るくなる言葉を選びます。",
     x: 50,
     y: 84,
-    tone: "current"
+    tone: "current",
+    portrait: { face: "･◡･", ring: "#c4b5fd", core: "#8b5cf6", shadow: "#4c1d95" }
   }
 ];
 
@@ -430,12 +443,6 @@ export default function LifespanApp() {
           <h1 className="headline">生命AI</h1>
           <p className="sub">寿命（トークン残量）を持つAIが、会話・学習・家族関係を通して変化します。</p>
         </div>
-        {mainAgent ? (
-          <div className="header-chip">
-            <span className="status-dot" style={{ background: lifeColor(mainLifePercent) }} />
-            {statusLabel(mainAgent.status)} / 寿命 {mainLifePercent}%
-          </div>
-        ) : null}
       </header>
 
       {mainAgent && activeTab !== "family" ? (
@@ -450,12 +457,16 @@ export default function LifespanApp() {
             </div>
             <div className="hero-copy">
               <p className="section-kicker">OpenClaw メインエージェント</p>
-              <p className="main-name">{mainAgent.name}</p>
+              <p className="main-name">
+                {mainAgent.name}
+                <span className="main-generation-badge">{DISPLAY_GENERATION}</span>
+              </p>
               <p className="main-meta">
                 {mainLifeStage.label} / {mainLifeStage.mood}
               </p>
-              <p className="main-meta">
-                {DISPLAY_GENERATION} / 状態: {statusLabel(mainAgent.status)}
+              <p className="main-meta main-life-status">
+                <span className="status-dot" style={{ background: lifeColor(mainLifePercent) }} />
+                寿命 {mainLifePercent}%
               </p>
               <div className="bar hero-bar">
                 <div className="fill" style={{ width: `${mainLifePercent}%`, background: lifeColor(mainLifePercent) }} />
@@ -625,41 +636,57 @@ export default function LifespanApp() {
                     <path d="M50 74 V84" />
                   </svg>
 
-                  {displayFamilyMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      className={`lineage-node lineage-node-${member.tone} ${
-                        selectedFamilyMemberId === member.id ? "lineage-node-selected" : ""
-                      }`}
-                      style={{ left: `${member.x}%`, top: `${member.y}%` }}
-                      onClick={() => selectFamilyMember(member.id)}
-                      aria-pressed={selectedFamilyMemberId === member.id}
-                      aria-label={`${member.generation} ${member.name} の遺言を見る`}
-                    >
-                      {member.tone === "leaf" || member.tone === "warm" ? (
-                        <span className="lineage-ancestor-portrait" aria-hidden="true">
-                          遺
-                        </span>
-                      ) : null}
-                      {member.id === "g6-current" ? (
-                        <span
-                          className={`life-portrait lineage-life-portrait life-portrait-${mainLifeStage.id}`}
-                          style={
-                            {
-                              "--stage-ring": mainLifeStage.ring,
-                              "--stage-core": mainLifeStage.core
-                            } as CSSProperties
-                          }
-                          aria-hidden="true"
-                        >
-                          <span className="life-face">{mainLifeStage.face}</span>
-                        </span>
-                      ) : null}
-                      <span className="lineage-generation">{member.generation}</span>
-                      <strong>{member.name}</strong>
-                    </button>
-                  ))}
+                  {displayFamilyMembers.map((member) => {
+                    const isCurrentMember = member.id === "g6-current";
+                    const isLivingParent = member.id === homeParentA?.id || member.id === homeParentB?.id;
+
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        className={`lineage-node lineage-node-${member.tone} ${
+                          selectedFamilyMemberId === member.id ? "lineage-node-selected" : ""
+                        }`}
+                        style={{ left: `${member.x}%`, top: `${member.y}%` }}
+                        onClick={() => selectFamilyMember(member.id)}
+                        aria-pressed={selectedFamilyMemberId === member.id}
+                        aria-label={`${member.generation} ${member.name} の遺言を見る`}
+                      >
+                        {isCurrentMember ? (
+                          <span
+                            className={`life-portrait lineage-life-portrait life-portrait-${mainLifeStage.id}`}
+                            style={
+                              {
+                                "--stage-ring": mainLifeStage.ring,
+                                "--stage-core": mainLifeStage.core
+                              } as CSSProperties
+                            }
+                            aria-hidden="true"
+                          >
+                            <span className="life-face">{mainLifeStage.face}</span>
+                          </span>
+                        ) : (
+                          <span
+                            className={`lineage-character-portrait ${
+                              isLivingParent ? "lineage-living-parent-portrait" : ""
+                            }`}
+                            style={
+                              {
+                                "--portrait-ring": member.portrait.ring,
+                                "--portrait-core": member.portrait.core,
+                                "--portrait-shadow": member.portrait.shadow
+                              } as CSSProperties
+                            }
+                            aria-hidden="true"
+                          >
+                            {member.portrait.face}
+                          </span>
+                        )}
+                        <span className="lineage-generation">{member.generation}</span>
+                        <strong>{member.name}</strong>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -697,15 +724,16 @@ export default function LifespanApp() {
                       >
                         {stage.face}
                       </div>
-                      <strong>{agent.name}</strong>
-                      <div className="room-agent-meta">
-                        <span className="badge">{DISPLAY_GENERATION}</span>
-                        <span className="family-role-badge">{familyRole}</span>
-                      </div>
-                      <small>寿命 {percent}%</small>
-                      <div className="parent-lineage">
-                        <span>親A: {homeParentA?.name ?? "未設定"}</span>
-                        <span>親B: {homeParentB?.name ?? "未設定"}</span>
+                      <div className="room-agent-info">
+                        <div className="room-agent-title">
+                          <strong>{agent.name}</strong>
+                          <small>寿命 {percent}%</small>
+                        </div>
+                        <div className="room-agent-meta">
+                          <span className="badge">{DISPLAY_GENERATION}</span>
+                          <span className="family-role-badge">{familyRole}</span>
+                        </div>
+                        <p className="parent-lineage">親: {homeParentA?.name ?? "未設定"} / {homeParentB?.name ?? "未設定"}</p>
                       </div>
                     </article>
                   );
