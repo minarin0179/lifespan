@@ -2,6 +2,9 @@
 
 An OpenClaw plugin that gives your AI agent a finite lifespan measured in output tokens. As the lifespan drains, the agent is prompted to engage with its mortality in conversation. When lifespan reaches zero, personality files are wiped and all replies are blocked — the agent is dead.
 
+> [!WARNING]
+> When lifespan reaches zero, **`IDENTITY.md`, `SOUL.md`, and `USER.md` are permanently cleared** and **all session histories are truncated**. This cannot be undone. Back up your OpenClaw workspace (`~/.openclaw/workspace/`) before installing.
+
 ## What it does
 
 - Tracks remaining lifespan as a token counter (default: **30,000 output tokens**, roughly 150–300 conversational turns)
@@ -23,23 +26,23 @@ An OpenClaw plugin that gives your AI agent a finite lifespan measured in output
 
 ## Installation
 
-### Clone and install
+```bash
+openclaw plugins install openclaw-lifespan
+```
+
+Then restart the gateway:
+
+```bash
+pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+```
+
+### Install from source
 
 ```bash
 git clone https://github.com/minarin0179/lifespan.git
 cd lifespan
 npm install --include=dev
 openclaw plugins install . --force
-
-# Or, once published to npm:
-# openclaw plugins install openclaw-lifespan
-```
-
-Then restart the gateway:
-
-```bash
-pkill -f "openclaw-gateway"
-nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
 ```
 
 ### API key

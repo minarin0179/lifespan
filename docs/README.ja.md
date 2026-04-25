@@ -3,6 +3,9 @@
 AI エージェントにアウトプットトークン数で計測される「寿命」を与える OpenClaw プラグインです。
 寿命が減るにつれてエージェントは自分の死を意識した会話をするようになり、ゼロになると人格ファイルが消去されてすべての返答がブロックされます。
 
+> [!WARNING]
+> 寿命がゼロになると、**`IDENTITY.md`・`SOUL.md`・`USER.md` が完全に消去**され、**全セッション履歴が切り詰められます**。この操作は元に戻せません。インストール前に OpenClaw ワークスペース（`~/.openclaw/workspace/`）をバックアップしてください。
+
 ## 動作概要
 
 - 残り寿命をトークンカウンターで管理（デフォルト: **30,000 出力トークン**、会話約 150〜300 ターン相当）
@@ -24,23 +27,23 @@ AI エージェントにアウトプットトークン数で計測される「�
 
 ## インストール
 
-### クローンしてインストール
+```bash
+openclaw plugins install openclaw-lifespan
+```
+
+その後ゲートウェイを再起動します：
+
+```bash
+pkill -f "openclaw-gateway" && nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
+```
+
+### ソースからインストール
 
 ```bash
 git clone https://github.com/minarin0179/lifespan.git
 cd lifespan
 npm install --include=dev
 openclaw plugins install . --force
-
-# npm 公開後はこちらでもインストール可能:
-# openclaw plugins install openclaw-lifespan
-```
-
-その後ゲートウェイを再起動します：
-
-```bash
-pkill -f "openclaw-gateway"
-nohup openclaw gateway run > /tmp/openclaw.log 2>&1 & disown
 ```
 
 ### API キー
