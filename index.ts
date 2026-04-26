@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   DEFAULT_LIFESPAN,
   WILL_MAX_CHARS,
@@ -70,12 +71,15 @@ interface PluginApi {
 
 const OPENCLAW_DIR =
   process.env.OPENCLAW_STATE_DIR ?? path.join(process.env.HOME ?? "/root", ".openclaw");
+const PROJECT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_DIR = path.join(OPENCLAW_DIR, "workspace");
 const SESSIONS_FILE = path.join(OPENCLAW_DIR, "agents", "main", "sessions", "sessions.json");
+const PUBLIC_DIR = path.join(PROJECT_DIR, "GUI", "public");
 
 const WILL_FILE = path.join(OPENCLAW_DIR, "lifespan", "will.md");
 
 const CLEARABLE_FILES = ["IDENTITY.md", "SOUL.md", "USER.md"];
+const CLEARABLE_IMAGE_EXTENSIONS = new Set([".avif", ".gif", ".heic", ".heif", ".jpeg", ".jpg", ".png", ".webp"]);
 
 function loadWill(): string | null {
   try {
@@ -107,6 +111,31 @@ function saveData(dir: string, filePath: string, data: LifespanData): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
+function clearPublicPhotos(dir: string = PUBLIC_DIR): void {
+  try {
+    if (!fs.existsSync(dir)) return;
+
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const entryPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        clearPublicPhotos(entryPath);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+      if (!CLEARABLE_IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+
+      try {
+        fs.rmSync(entryPath, { force: true });
+      } catch (err) {
+        console.error(`[lifespan] failed to remove public photo ${entryPath}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error(`[lifespan] failed to scan public photos in ${dir}:`, err);
+  }
+}
+
 function clearPersonality(): void {
   // Clear workspace personality files
   for (const name of CLEARABLE_FILES) {
@@ -117,6 +146,8 @@ function clearPersonality(): void {
       console.error(`[lifespan] failed to clear ${name}:`, err);
     }
   }
+
+  clearPublicPhotos();
 
   // Truncate all agent session histories to their header line only.
   // Without this the agent can recover its identity from conversation context.

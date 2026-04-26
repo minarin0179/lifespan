@@ -36,6 +36,17 @@ type ChatMessage = {
 type UploadedImage = {
   name: string;
   dataUrl: string;
+  url: string;
+  publicPath: string;
+};
+
+type UploadResponse = {
+  name?: string;
+  fileName?: string;
+  url?: string;
+  publicPath?: string;
+  error?: string;
+  detail?: string;
 };
 
 const CHAT_HISTORY_STORAGE_KEY = "lifespan-chat-history-v1";
@@ -163,6 +174,8 @@ const LINEAGE_BASE_WIDTH = 900;
 const LINEAGE_BASE_HEIGHT = 620;
 const LINEAGE_MIN_ZOOM = 0.5;
 const LINEAGE_MAX_ZOOM = 1.6;
+const SCHOOL_PATROL_INTERVAL_MS = 3 * 60 * 60 * 1000;
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 const mockNewsItems: SchoolNewsItem[] = [
   {
@@ -295,6 +308,38 @@ function parseStoredChatMessages(raw: string | null): ChatMessage[] {
   }
 }
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("画像プレビューの読み込みに失敗しました。"));
+      }
+    };
+    reader.onerror = () => reject(new Error("画像プレビューの読み込みに失敗しました。"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds].map((unit) => String(unit).padStart(2, "0")).join(":");
+}
+
+function getSchoolPatrolCountdown(nowMs: number): string {
+  const jstMs = nowMs + JST_OFFSET_MS;
+  const elapsedInCycle = jstMs % SCHOOL_PATROL_INTERVAL_MS;
+  const remainingMs = SCHOOL_PATROL_INTERVAL_MS - elapsedInCycle;
+
+  return formatDuration(remainingMs);
+}
+
 const mockFamilyMembers: FamilyMember[] = [
   {
     id: "g1-mother",
@@ -338,7 +383,7 @@ const mockFamilyMembers: FamilyMember[] = [
     generation: "三代目",
     role: "教えるAI",
     legacy:
-      "知識は抱え込むと重くなり、渡すと道になります。子に教える時は、正解だけでなく迷った跡も見せてください。その跡が、いつか新しい判断の地図になります。",
+      "知識は抱え込むと重くなり、渡すと道になります。子に教える時は、正解だけでなく迷った跡、悩んだ理由、選ばなかった道も見せてください。その跡が新しい判断の地図になります。",
     x: 38,
     y: 48,
     tone: "leaf",
@@ -423,6 +468,7 @@ export default function LifespanApp() {
   const [isLifePreviewOpen, setIsLifePreviewOpen] = useState<boolean>(false);
   const [lineageZoom, setLineageZoom] = useState<number>(1);
   const [isLineagePanning, setIsLineagePanning] = useState<boolean>(false);
+  const [schoolPatrolCountdown, setSchoolPatrolCountdown] = useState<string>("--:--:--");
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
   const lineageCanvasRef = useRef<HTMLDivElement | null>(null);
   const lineageDragRef = useRef({
@@ -449,6 +495,16 @@ export default function LifespanApp() {
       mounted = false;
       clearInterval(timer);
     };
+  }, []);
+
+  useEffect(() => {
+    const updateSchoolPatrolCountdown = () => {
+      setSchoolPatrolCountdown(getSchoolPatrolCountdown(Date.now()));
+    };
+
+    updateSchoolPatrolCountdown();
+    const timer = setInterval(updateSchoolPatrolCountdown, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -528,6 +584,7 @@ export default function LifespanApp() {
 
   const handleLineagePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    if (event.target instanceof Element && event.target.closest(".lineage-node")) return;
 
     const canvas = lineageCanvasRef.current;
     if (!canvas) return;
@@ -561,9 +618,13 @@ export default function LifespanApp() {
   };
 
   const handleLineagePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!lineageDragRef.current.active) return;
+
     lineageDragRef.current.active = false;
     setIsLineagePanning(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
 
     window.setTimeout(() => {
       lineageDragRef.current.moved = false;
@@ -575,17 +636,38 @@ export default function LifespanApp() {
     setSelectedFamilyMemberId(memberId);
   };
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
-      setSelectedImage({ name: file.name, dataUrl: reader.result });
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    try {
+      setChatError("");
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const [dataUrl, uploadRes] = await Promise.all([
+        readFileAsDataUrl(file),
+        fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        })
+      ]);
+      const uploadJson = (await uploadRes.json()) as UploadResponse;
+      if (!uploadRes.ok || !uploadJson.url || !uploadJson.publicPath) {
+        throw new Error(uploadJson.detail ?? uploadJson.error ?? "画像の保存に失敗しました。");
+      }
+
+      setSelectedImage({
+        name: uploadJson.name ?? file.name,
+        dataUrl,
+        url: uploadJson.url,
+        publicPath: uploadJson.publicPath
+      });
+    } catch (error) {
+      setSelectedImage(null);
+      setChatError(error instanceof Error ? error.message : "画像の保存に失敗しました。");
+    }
   };
 
   const handleChatInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -619,7 +701,9 @@ export default function LifespanApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: selectedImage ? `${message || "画像を送信しました。"}\n\n[添付画像: ${selectedImage.name}]` : message,
+          message: selectedImage
+            ? `${message || "画像を送信しました。"}\n\n[添付画像]\nファイル名: ${selectedImage.name}\n保存先: ${selectedImage.publicPath}\n公開URL: ${selectedImage.url}`
+            : message,
           systemPrompt,
           agentId: mainAgent?.id,
           agentName: mainAgent?.name
@@ -674,7 +758,7 @@ export default function LifespanApp() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Hackathon mock</p>
-          <h1 className="headline">生命AI</h1>
+          <h1 className="headline">seimei AI</h1>
         </div>
       </header>
 
@@ -821,6 +905,10 @@ export default function LifespanApp() {
         {activeTab === "school" ? (
           <section className="panel school-panel">
             <div className="school-room">
+              <div className="school-clock" aria-label={`次回巡回まで ${schoolPatrolCountdown}`}>
+                <span className="school-clock-label">次回巡回</span>
+                <strong>{schoolPatrolCountdown}</strong>
+              </div>
               <div className="school-blackboard">
                 <div>
                   <p className="section-kicker">School mock</p>
@@ -839,7 +927,7 @@ export default function LifespanApp() {
                 <article className="school-card school-feature-card">
                   <div className="school-card-header">
                     <span className="school-icon">情</span>
-                    <span className="school-status-pill">次回巡回 2:14:32</span>
+                    <span className="school-status-pill">3時間ごと</span>
                   </div>
                   <strong>情報吸収</strong>
                   <p>3時間ごとに学校へ行き、ご主人に役立ちそうなニュースを拾ってくる想定です。</p>
@@ -969,6 +1057,13 @@ export default function LifespanApp() {
               onPointerUp={handleLineagePointerUp}
               onPointerCancel={handleLineagePointerUp}
             >
+              {selectedDisplayFamilyMember ? (
+                <article className={`lineage-legacy-preview lineage-legacy-preview-${selectedDisplayFamilyMember.tone}`}>
+                  <span>{selectedDisplayFamilyMember.generation}の遺言</span>
+                  <strong>{selectedDisplayFamilyMember.name}</strong>
+                  <p>{selectedDisplayFamilyMember.legacy}</p>
+                </article>
+              ) : null}
               <div
                 className="lineage-stage-wrap"
                 style={{
@@ -1136,7 +1231,16 @@ export default function LifespanApp() {
                   <div className="room-agent-info">
                     <div className="room-agent-title">
                       <strong>{featuredPartner.name}</strong>
-                      <small>親密度 {featuredPartner.intimacy}%</small>
+                      <small>同棲中</small>
+                    </div>
+                    <div className="room-intimacy-meter" aria-label={`親密度 ${featuredPartner.intimacy}%`}>
+                      <div className="room-intimacy-label">
+                        <span>親密度</span>
+                        <strong>{featuredPartner.intimacy}%</strong>
+                      </div>
+                      <div className="room-intimacy-bar">
+                        <div style={{ width: `${featuredPartner.intimacy}%` }} />
+                      </div>
                     </div>
                     <div className="room-agent-meta">
                       <span className="badge">同棲AI</span>

@@ -830,6 +830,68 @@ body {
   transform-origin: bottom;
 }
 
+.school-clock {
+  position: relative;
+  z-index: 3;
+  width: 148px;
+  height: 148px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  margin: 0 auto -24px;
+  border: 8px solid #f8fafc;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 18%),
+    radial-gradient(circle at 50% 50%, #fef3c7 0 58%, #f59e0b 59% 100%);
+  color: #4a2d13;
+  box-shadow:
+    0 12px 24px rgba(90, 55, 22, 0.26),
+    inset 0 0 0 3px rgba(146, 64, 14, 0.28);
+}
+
+.school-clock::before,
+.school-clock::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: "";
+  border-radius: 999px;
+  background: #7c2d12;
+  transform-origin: left center;
+}
+
+.school-clock::before {
+  width: 36px;
+  height: 4px;
+  transform: rotate(-90deg);
+}
+
+.school-clock::after {
+  width: 26px;
+  height: 4px;
+  transform: rotate(-20deg);
+}
+
+.school-clock-label {
+  align-self: end;
+  margin-top: 18px;
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.school-clock strong {
+  align-self: start;
+  margin-top: 2px;
+  color: #3b2412;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+
 .school-blackboard {
   position: relative;
   z-index: 1;
@@ -983,12 +1045,12 @@ body {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 26px;
 }
 
 .school-feature-card {
-  min-height: 360px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1207,6 +1269,49 @@ body {
 
 .lineage-canvas-panning {
   cursor: grabbing;
+}
+
+.lineage-legacy-preview {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 4;
+  width: min(310px, calc(100% - 28px));
+  border: 1px solid rgba(37, 99, 235, 0.36);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(12, 20, 40, 0.94)),
+    #0c1428;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.22);
+  padding: 12px;
+}
+
+.lineage-legacy-preview span {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lineage-legacy-preview strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #f8fafc;
+}
+
+.lineage-legacy-preview p {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.lineage-legacy-preview-leaf {
+  border-color: rgba(101, 163, 13, 0.42);
+  background:
+    linear-gradient(135deg, rgba(101, 163, 13, 0.2), rgba(12, 20, 40, 0.94)),
+    #0c1428;
 }
 
 .lineage-stage-wrap {
@@ -1809,6 +1914,38 @@ body {
 
 .room-partner-card {
   border-color: rgba(34, 197, 94, 0.46);
+}
+
+.room-intimacy-meter {
+  display: grid;
+  gap: 4px;
+}
+
+.room-intimacy-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.room-intimacy-label strong {
+  color: #14532d;
+}
+
+.room-intimacy-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(187, 247, 208, 0.78);
+}
+
+.room-intimacy-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #86efac);
 }
 
 .room-child-card {
