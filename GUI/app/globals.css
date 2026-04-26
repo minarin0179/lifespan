@@ -356,7 +356,8 @@ body {
   .lineage-living-parent-portrait,
   .life-mini,
   .life-mini::before,
-  .life-mini::after {
+  .life-mini::after,
+  .room-talk-status b {
     animation: none;
   }
 }
@@ -806,12 +807,12 @@ body {
 .school-room {
   position: relative;
   overflow: hidden;
-  min-height: 360px;
+  min-height: 0;
   border: 2px solid #c78a3a;
   border-radius: 18px;
   background:
     linear-gradient(180deg, #fff8dc 0%, #fff2c6 50%, #d9963b 50%, #e4b060 100%);
-  padding: 22px 22px 24px;
+  padding: 16px;
   color: #3b2412;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
 }
@@ -830,16 +831,24 @@ body {
   transform-origin: bottom;
 }
 
-.school-clock {
+.school-header-row {
   position: relative;
   z-index: 3;
-  width: 148px;
-  height: 148px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.school-clock {
+  position: relative;
+  width: 116px;
+  height: 116px;
   display: grid;
   place-items: center;
   gap: 2px;
-  margin: 0 auto -24px;
-  border: 8px solid #f8fafc;
+  border: 6px solid #f8fafc;
   border-radius: 999px;
   background:
     radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 18%),
@@ -862,22 +871,22 @@ body {
 }
 
 .school-clock::before {
-  width: 36px;
-  height: 4px;
+  width: 28px;
+  height: 3px;
   transform: rotate(-90deg);
 }
 
 .school-clock::after {
-  width: 26px;
-  height: 4px;
+  width: 20px;
+  height: 3px;
   transform: rotate(-20deg);
 }
 
 .school-clock-label {
   align-self: end;
-  margin-top: 18px;
+  margin-top: 14px;
   color: #7c2d12;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -886,7 +895,7 @@ body {
   align-self: start;
   margin-top: 2px;
   color: #3b2412;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
@@ -894,14 +903,12 @@ body {
 
 .school-blackboard {
   position: relative;
-  z-index: 1;
-  width: min(100%, 520px);
-  min-height: 128px;
+  width: 100%;
+  min-height: 108px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 0 auto 18px;
   border: 8px solid #9b682e;
   border-bottom-width: 12px;
   border-radius: 5px;
@@ -938,11 +945,11 @@ body {
   position: relative;
   z-index: 2;
   width: 150px;
-  min-height: 58px;
+  min-height: 50px;
   display: grid;
   place-items: center;
   gap: 2px;
-  margin: -2px auto 12px;
+  margin: 0 auto 10px;
   border: 2px solid #8a4b12;
   border-radius: 4px 4px 10px 10px;
   background: linear-gradient(180deg, #b36a15 0%, #8f4a0f 100%);
@@ -1020,7 +1027,7 @@ body {
 .school-log {
   position: relative;
   z-index: 2;
-  margin-top: 34px;
+  margin-top: 18px;
   border: 1px dashed rgba(107, 75, 42, 0.5);
   border-radius: 14px;
   background: rgba(255, 248, 223, 0.86);
@@ -1046,7 +1053,93 @@ body {
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 26px;
+  gap: 14px;
+}
+
+.school-companion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.school-agent-card {
+  width: 100%;
+  min-height: 148px;
+}
+
+.school-agent-card .life-mini {
+  width: 64px;
+  height: 64px;
+  font-size: 19px;
+}
+
+.school-chat-panel {
+  border: 2px solid #9a5a17;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(216, 146, 46, 0.16), rgba(255, 248, 223, 0.92)),
+    #fff8df;
+  padding: 14px;
+  box-shadow: 0 14px 20px rgba(94, 56, 19, 0.18);
+}
+
+.school-chat-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.school-chat-header strong {
+  color: #3b2412;
+  font-size: 15px;
+}
+
+.school-chat-box {
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(47, 59, 84, 0.42);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0b1329 0%, #0a1122 100%);
+  padding: 14px;
+}
+
+.school-chat-row .chat-avatar {
+  width: 34px;
+  height: 34px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.school-chat-row-left .chat-bubble {
+  background: #ffffff;
+  color: #1f2937;
+  border: 0;
+}
+
+.school-chat-row-right {
+  flex-direction: row-reverse;
+}
+
+.school-chat-row-right .chat-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.school-chat-row-right .chat-bubble {
+  background: #8de055;
+  color: #17200f;
+  border: 0;
+  border-bottom-right-radius: 18px;
+}
+
+.school-chat-row-right .chat-name {
+  color: #d8f3dc;
 }
 
 .school-feature-card {
@@ -1056,9 +1149,68 @@ body {
   gap: 10px;
 }
 
+.school-feature-card:not([open]) {
+  padding: 8px 10px;
+}
+
+.school-feature-card[open] {
+  padding-bottom: 14px;
+}
+
 .school-feature-card::before,
 .school-feature-card::after {
   display: none;
+}
+
+.school-card-summary {
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.school-feature-card:not([open]) .school-card-summary {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.school-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.school-card-summary::after {
+  content: "開く";
+  justify-self: end;
+  border: 1px solid rgba(90, 53, 22, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 248, 223, 0.86);
+  color: #7c2d12;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.school-feature-card[open] .school-card-summary::after {
+  content: "閉じる";
+}
+
+.school-feature-card:not([open]) .school-card-summary p {
+  display: none;
+}
+
+.school-feature-card:not([open]) .school-card-header {
+  justify-content: flex-start;
+}
+
+.school-feature-card:not([open]) .school-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0;
+}
+
+.school-feature-card:not([open]) .school-status-pill {
+  white-space: nowrap;
 }
 
 .school-card-header,
@@ -1426,11 +1578,39 @@ body {
 }
 
 .lineage-node-sky {
-  background: #bfdbfe;
+  width: 108px;
+  min-height: 124px;
+  flex-direction: column;
+  justify-content: center;
+  border-color: #0369a1;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.74), transparent 2.4rem),
+    linear-gradient(180deg, #dbeafe 0%, #7dd3fc 100%);
+  padding: 10px 8px;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  box-shadow:
+    0 0 0 4px rgba(14, 165, 233, 0.14),
+    0 16px 24px rgba(3, 105, 161, 0.22);
 }
 
 .lineage-node-violet {
-  background: #ddd6fe;
+  width: 108px;
+  min-height: 124px;
+  flex-direction: column;
+  justify-content: center;
+  border-color: #5b21b6;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.74), transparent 2.4rem),
+    linear-gradient(180deg, #ede9fe 0%, #c4b5fd 100%);
+  padding: 10px 8px;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  box-shadow:
+    0 0 0 4px rgba(139, 92, 246, 0.14),
+    0 16px 24px rgba(91, 33, 182, 0.22);
 }
 
 .lineage-node-current {
@@ -1448,11 +1628,24 @@ body {
     0 18px 28px rgba(37, 99, 235, 0.24);
 }
 
-.lineage-node-leaf .lineage-generation {
+.lineage-node-leaf .lineage-generation,
+.lineage-node-sky .lineage-generation,
+.lineage-node-violet .lineage-generation {
   border-left: 0;
   border-bottom: 1px solid rgba(63, 98, 18, 0.26);
-  color: #365314;
   padding: 0 0 3px;
+}
+
+.lineage-node-leaf .lineage-generation {
+  color: #365314;
+}
+
+.lineage-node-sky .lineage-generation {
+  color: #075985;
+}
+
+.lineage-node-violet .lineage-generation {
+  color: #4c1d95;
 }
 
 .lineage-node-warm .lineage-generation {
@@ -1462,7 +1655,9 @@ body {
   padding: 0 0 3px;
 }
 
-.lineage-node-leaf strong {
+.lineage-node-leaf strong,
+.lineage-node-sky strong,
+.lineage-node-violet strong {
   color: #1f2937;
   letter-spacing: 0;
 }
@@ -1567,6 +1762,21 @@ body {
   font-size: 14px;
 }
 
+.lineage-family-life-portrait {
+  width: 56px;
+  height: 56px;
+  font-size: 17px;
+  animation: none;
+}
+
+.lineage-family-life-portrait::before {
+  inset: -4px;
+}
+
+.lineage-family-life-portrait::after {
+  inset: 7px;
+}
+
 .lineage-node-current::after {
   position: absolute;
   right: -12px;
@@ -1641,6 +1851,50 @@ body {
     linear-gradient(90deg, rgba(14, 165, 233, 0.12), transparent),
     #0c1428;
   padding: 14px;
+}
+
+.inheritance-collapsible-card:not([open]) {
+  display: block;
+}
+
+.inheritance-collapsible-card[open] {
+  display: grid;
+}
+
+.inheritance-card-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.inheritance-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.inheritance-card-summary .inheritance-kicker,
+.inheritance-card-summary strong,
+.inheritance-card-summary p {
+  grid-column: 1;
+}
+
+.inheritance-card-summary::after {
+  content: "開く";
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.18);
+  color: #dbeafe;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.inheritance-collapsible-card[open] .inheritance-card-summary::after {
+  content: "閉じる";
 }
 
 .inheritance-card > div > strong,
@@ -1810,12 +2064,12 @@ body {
 .room-family {
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(164px, auto) minmax(220px, 1fr);
   align-items: flex-end;
-  gap: 14px;
+  gap: 12px;
   min-height: 300px;
-  padding-top: 172px;
+  padding-top: 118px;
 }
 
 .room-agent {
@@ -1831,6 +2085,104 @@ body {
   padding: 16px;
   box-shadow: 0 12px 22px rgba(89, 48, 16, 0.16);
   backdrop-filter: blur(4px);
+}
+
+.room-current-card {
+  justify-self: end;
+}
+
+.room-talk-bridge {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.room-speech {
+  position: relative;
+  margin: 0;
+  border: 1px solid rgba(139, 82, 26, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 250, 238, 0.92);
+  color: #3b2412;
+  padding: 10px 12px;
+  box-shadow: 0 10px 18px rgba(89, 48, 16, 0.12);
+}
+
+.room-speech::after {
+  position: absolute;
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  content: "";
+  background: inherit;
+  border-right: 1px solid rgba(139, 82, 26, 0.2);
+  border-bottom: 1px solid rgba(139, 82, 26, 0.2);
+  transform: rotate(45deg);
+}
+
+.room-speech-left::after {
+  left: 42px;
+}
+
+.room-speech-right::after {
+  right: 42px;
+}
+
+.room-speech strong,
+.room-speech span {
+  display: block;
+}
+
+.room-speech strong {
+  margin-bottom: 4px;
+  color: #8a4b12;
+  font-size: 12px;
+}
+
+.room-speech span {
+  color: #4a2d13;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.room-talk-status {
+  min-width: 96px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  border: 1px solid rgba(34, 197, 94, 0.38);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.9);
+  color: #166534;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 8px 16px rgba(22, 101, 52, 0.12);
+}
+
+.room-talk-status b {
+  color: #22c55e;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  animation: room-talk-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes room-talk-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
 }
 
 .room-agent small {
@@ -1914,6 +2266,7 @@ body {
 
 .room-partner-card {
   border-color: rgba(34, 197, 94, 0.46);
+  justify-self: start;
 }
 
 .room-intimacy-meter {
@@ -1950,6 +2303,44 @@ body {
 
 .room-child-card {
   border-color: rgba(96, 165, 250, 0.46);
+  width: min(100%, 196px);
+  min-height: 136px;
+  gap: 9px;
+  padding: 12px;
+  align-self: flex-end;
+  justify-self: center;
+  transform: translateY(12px);
+}
+
+.room-child-card .life-mini {
+  width: 58px;
+  height: 58px;
+  border-width: 1px;
+  font-size: 18px;
+}
+
+.room-child-card .life-mini::before {
+  inset: -4px;
+}
+
+.room-child-card .life-mini::after {
+  inset: 7px;
+}
+
+.room-child-card .room-agent-title strong {
+  font-size: 15px;
+}
+
+.room-child-card .room-agent-title small,
+.room-child-card .badge,
+.room-child-card .family-role-badge,
+.room-child-card .parent-lineage {
+  font-size: 10px;
+}
+
+.room-child-card .badge,
+.room-child-card .family-role-badge {
+  padding: 2px 6px;
 }
 
 .home-social-panels {
@@ -1970,10 +2361,52 @@ body {
   backdrop-filter: blur(4px);
 }
 
+.home-collapsible-card:not([open]) {
+  align-self: start;
+}
+
+.home-card-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.home-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-card-summary .inheritance-kicker,
+.home-card-summary strong {
+  grid-column: 1;
+}
+
+.home-card-summary::after {
+  content: "開く";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  border: 1px solid rgba(255, 237, 213, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 250, 238, 0.12);
+  color: #fde68a;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.home-collapsible-card[open] .home-card-summary {
+  margin-bottom: 10px;
+}
+
+.home-collapsible-card[open] .home-card-summary::after {
+  content: "閉じる";
+}
+
 .home-dialogue {
   display: grid;
   gap: 8px;
-  margin-top: 10px;
 }
 
 .home-dialogue p {
@@ -2160,7 +2593,13 @@ body {
     padding: 16px 14px 22px;
   }
 
+  .school-header-row {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
   .school-blackboard {
+    width: 100%;
     border-width: 6px;
     border-bottom-width: 10px;
     padding: 14px;
@@ -2171,11 +2610,32 @@ body {
     gap: 26px;
   }
 
+  .school-companion-grid {
+    grid-template-columns: 1fr;
+  }
+
   .school-social-grid,
   .home-social-panels,
   .inheritance-card,
   .inheritance-bars {
     grid-template-columns: 1fr;
+  }
+
+  .room-family {
+    grid-template-columns: 1fr;
+    padding-top: 142px;
+  }
+
+  .room-talk-bridge {
+    grid-template-columns: 1fr;
+  }
+
+  .room-current-card,
+  .room-child-card,
+  .room-partner-card {
+    justify-self: stretch;
+    width: 100%;
+    transform: none;
   }
 
   .school-feature-card {

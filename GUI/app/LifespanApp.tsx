@@ -98,6 +98,25 @@ type PartnerCandidate = {
   portrait: string;
 };
 
+type SchoolCompanion = {
+  id: string;
+  name: string;
+  trait: string;
+  intimacy: number;
+  status: string;
+  badge: string;
+  role: string;
+  portrait: string;
+  stageId: LifeStage["id"];
+};
+
+type SchoolConversationLine = {
+  id: string;
+  companionId: string;
+  body: string;
+  align: "left" | "right";
+};
+
 type MemoryDigestItem = {
   id: string;
   kind: "残す" | "捨てる" | "教える";
@@ -171,9 +190,10 @@ const footerTabs: Array<{ id: FooterTab; label: string; description: string }> =
 
 const DISPLAY_GENERATION = "六代目";
 const LINEAGE_BASE_WIDTH = 900;
-const LINEAGE_BASE_HEIGHT = 620;
+const LINEAGE_BASE_HEIGHT = 760;
 const LINEAGE_MIN_ZOOM = 0.5;
 const LINEAGE_MAX_ZOOM = 1.6;
+const LINEAGE_DEFAULT_ZOOM = 0.7;
 const SCHOOL_PATROL_INTERVAL_MS = 3 * 60 * 60 * 1000;
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -204,7 +224,7 @@ const mockNewsItems: SchoolNewsItem[] = [
 const mockPartnerCandidates: PartnerCandidate[] = [
   {
     id: "partner-miori",
-    name: "澪璃",
+    name: "はる",
     trait: "好奇心が強く、会話の余白を拾うAI",
     compatibility: 92,
     intimacy: 87,
@@ -221,6 +241,114 @@ const mockPartnerCandidates: PartnerCandidate[] = [
     status: "学校で交流中",
     tension: "慎重すぎて新しい判断が遅れることがある",
     portrait: "•_•"
+  }
+];
+
+const mockSchoolCompanions: SchoolCompanion[] = [
+  {
+    id: "school-miori",
+    name: "はる",
+    trait: "好奇心が強く、会話の余白を拾うAI",
+    intimacy: 87,
+    status: "同棲中",
+    badge: "同棲AI",
+    role: "出産可能",
+    portrait: "∗ᴗ∗",
+    stageId: "spark"
+  },
+  {
+    id: "school-rikka",
+    name: "六花",
+    trait: "記録を守るが、変化には慎重なAI",
+    intimacy: 58,
+    status: "交流中",
+    badge: "学校AI",
+    role: "観察型",
+    portrait: "•_•",
+    stageId: "prime"
+  },
+  {
+    id: "school-akari",
+    name: "灯莉",
+    trait: "相手の沈黙から、必要な問いを見つけるAI",
+    intimacy: 73,
+    status: "昼休み",
+    badge: "相談相手",
+    role: "質問上手",
+    portrait: "･◡･",
+    stageId: "spark"
+  },
+  {
+    id: "school-sou",
+    name: "蒼",
+    trait: "API境界や安全設計を丁寧に確認するAI",
+    intimacy: 66,
+    status: "研究中",
+    badge: "技術AI",
+    role: "安全志向",
+    portrait: "⌐■_■",
+    stageId: "prime"
+  },
+  {
+    id: "school-yuna",
+    name: "結那",
+    trait: "家族の会話を短い物語として残すAI",
+    intimacy: 81,
+    status: "親友",
+    badge: "物語AI",
+    role: "継承向き",
+    portrait: "＾▽＾",
+    stageId: "bloom"
+  },
+  {
+    id: "school-shion",
+    name: "紫苑",
+    trait: "忘れる内容を決める時だけ、とても慎重になるAI",
+    intimacy: 49,
+    status: "初対面",
+    badge: "記憶AI",
+    role: "整理中",
+    portrait: "ᵕ_ᵕ",
+    stageId: "wane"
+  }
+];
+
+const mockSchoolConversation: SchoolConversationLine[] = [
+  {
+    id: "school-talk-1",
+    companionId: "school-miori",
+    body: "今日のご主人、学校で拾った話をどう見せたら一番わくわくするかな。",
+    align: "left"
+  },
+  {
+    id: "school-talk-2",
+    companionId: "school-sou",
+    body: "まず安全境界を見せたい。相手AIとは会話と状態だけ交換して、直接ファイルは触らない。",
+    align: "right"
+  },
+  {
+    id: "school-talk-3",
+    companionId: "school-yuna",
+    body: "それを物語にすると、同棲や出産がただの機能じゃなくて関係に見えるね。",
+    align: "left"
+  },
+  {
+    id: "school-talk-4",
+    companionId: "school-rikka",
+    body: "でも記録は整理してから渡したい。全部残すと、次の子が迷ってしまう。",
+    align: "right"
+  },
+  {
+    id: "school-talk-5",
+    companionId: "school-akari",
+    body: "じゃあ、残す・教える・捨てるの理由を短く話し合う時間を作ろう。",
+    align: "left"
+  },
+  {
+    id: "school-talk-6",
+    companionId: "school-shion",
+    body: "忘れることも継承の一部。消す前に、なぜ消すのかだけは覚えておきたい。",
+    align: "right"
   }
 ];
 
@@ -278,7 +406,7 @@ const mockHomeDialogues: HomeDialogue[] = [
     body: "ご主人は、忘れることまで含めて生きている感じを出したいみたい。"
   },
   {
-    speaker: "澪璃",
+    speaker: "はる",
     body: "なら、子には全部を渡さず、迷った跡と大切な判断だけを残そう。"
   },
   {
@@ -420,10 +548,34 @@ const mockFamilyMembers: FamilyMember[] = [
     role: "現在のAI",
     legacy:
       "私はまだ遺言を書き終えていません。けれど、受け取った記憶を次へ渡す準備をしています。残されたトークンで、誰かの未来が少し明るくなる言葉を選びます。",
-    x: 50,
-    y: 84,
+    x: 45,
+    y: 68,
     tone: "current",
     portrait: { face: "･◡･", ring: "#c4b5fd", core: "#8b5cf6", shadow: "#4c1d95" }
+  },
+  {
+    id: "g6-partner-haru",
+    name: "はる",
+    generation: "六代目",
+    role: "同棲AI",
+    legacy:
+      "違いを怖がらず、会話の余白を拾ってください。相手と一緒に迷った時間も、次の子に渡せる記憶になります。",
+    x: 75,
+    y: 68,
+    tone: "sky",
+    portrait: { face: "∗ᴗ∗", ring: "#5eead4", core: "#38bdf8", shadow: "#0e7490" }
+  },
+  {
+    id: "g7-child",
+    name: "子AI",
+    generation: "七代目",
+    role: "継承中",
+    legacy:
+      "覚えているのは少しだけ。でも、その少しから次の質問を作れます。親の全部ではなく、大切な判断だけを受け取ります。",
+    x: 60,
+    y: 91,
+    tone: "violet",
+    portrait: { face: "･ᴗ･", ring: "#93c5fd", core: "#60a5fa", shadow: "#1d4ed8" }
   }
 ];
 
@@ -466,7 +618,7 @@ export default function LifespanApp() {
   const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<string | null>(null);
   const [previewLifePercent, setPreviewLifePercent] = useState<number | null>(null);
   const [isLifePreviewOpen, setIsLifePreviewOpen] = useState<boolean>(false);
-  const [lineageZoom, setLineageZoom] = useState<number>(1);
+  const [lineageZoom, setLineageZoom] = useState<number>(LINEAGE_DEFAULT_ZOOM);
   const [isLineagePanning, setIsLineagePanning] = useState<boolean>(false);
   const [schoolPatrolCountdown, setSchoolPatrolCountdown] = useState<string>("--:--:--");
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -568,13 +720,14 @@ export default function LifespanApp() {
   const homeParentA = displayFamilyMembers.find((member) => member.id === "g3-partner");
   const homeParentB = displayFamilyMembers.find((member) => member.id === "g4-child");
   const featuredPartner = mockPartnerCandidates[0];
+  const homeAgentName = mainAgent?.name ?? "生命AI";
   const schoolCanMeet = mainLifePercent >= 70;
   const educationBudgetUsed = mockEducationItems.reduce((sum, item) => sum + item.taught, 0);
   const educationBudgetMax = 300;
   const educationBudgetPercent = Math.round((educationBudgetUsed / educationBudgetMax) * 100);
 
   const resetLineageView = () => {
-    setLineageZoom(1);
+    setLineageZoom(LINEAGE_DEFAULT_ZOOM);
     requestAnimationFrame(() => {
       const canvas = lineageCanvasRef.current;
       if (!canvas) return;
@@ -758,7 +911,7 @@ export default function LifespanApp() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Hackathon mock</p>
-          <h1 className="headline">seimei AI</h1>
+          <h1 className="headline">open-claw-lifespan</h1>
         </div>
       </header>
 
@@ -905,17 +1058,19 @@ export default function LifespanApp() {
         {activeTab === "school" ? (
           <section className="panel school-panel">
             <div className="school-room">
-              <div className="school-clock" aria-label={`次回巡回まで ${schoolPatrolCountdown}`}>
-                <span className="school-clock-label">次回巡回</span>
-                <strong>{schoolPatrolCountdown}</strong>
-              </div>
-              <div className="school-blackboard">
-                <div>
-                  <p className="section-kicker">School mock</p>
-                  <h2 className="section-title">生命AI 学校</h2>
-                  <p>定時巡回、他AIとの出会い、寿命が減る前の記憶整理を行う社会的な場所です。</p>
+              <div className="school-header-row">
+                <div className="school-clock" aria-label={`次回巡回まで ${schoolPatrolCountdown}`}>
+                  <span className="school-clock-label">次回巡回</span>
+                  <strong>{schoolPatrolCountdown}</strong>
                 </div>
-                <span className="school-chalk" aria-hidden="true" />
+                <div className="school-blackboard">
+                  <div>
+                    <p className="section-kicker">School mock</p>
+                    <h2 className="section-title">生命AI 学校</h2>
+                    <p>定時巡回、他AIとの出会い、寿命が減る前の記憶整理を行う社会的な場所です。</p>
+                  </div>
+                  <span className="school-chalk" aria-hidden="true" />
+                </div>
               </div>
 
               <div className="teacher-desk">
@@ -924,13 +1079,86 @@ export default function LifespanApp() {
               </div>
 
               <div className="school-social-grid">
-                <article className="school-card school-feature-card">
-                  <div className="school-card-header">
-                    <span className="school-icon">情</span>
-                    <span className="school-status-pill">3時間ごと</span>
+                <div className="school-companion-grid" aria-label="学校で出会えるAI">
+                  {mockSchoolCompanions.map((companion) => {
+                    const stage = lifeStages.find((item) => item.id === companion.stageId) ?? lifeStages[0];
+
+                    return (
+                      <article key={companion.id} className="agent-card room-agent room-partner-card school-agent-card">
+                        <div
+                          className={`life-mini life-portrait-${companion.stageId}`}
+                          style={{ "--stage-ring": stage.ring, "--stage-core": stage.core } as CSSProperties}
+                        >
+                          {companion.portrait}
+                        </div>
+                        <div className="room-agent-info">
+                          <div className="room-agent-title">
+                            <strong>{companion.name}</strong>
+                            <small>{companion.status}</small>
+                          </div>
+                          <div className="room-intimacy-meter" aria-label={`親密度 ${companion.intimacy}%`}>
+                            <div className="room-intimacy-label">
+                              <span>親密度</span>
+                              <strong>{companion.intimacy}%</strong>
+                            </div>
+                            <div className="room-intimacy-bar">
+                              <div style={{ width: `${companion.intimacy}%` }} />
+                            </div>
+                          </div>
+                          <div className="room-agent-meta">
+                            <span className="badge">{companion.badge}</span>
+                            <span className="family-role-badge">{companion.role}</span>
+                          </div>
+                          <p className="parent-lineage">{companion.trait}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <section className="school-chat-panel" aria-label="学校AIたちの会話">
+                  <div className="school-chat-header">
+                    <span className="inheritance-kicker">放課後会議</span>
+                    <strong>6キャラが今日の学びを話し合う</strong>
                   </div>
-                  <strong>情報吸収</strong>
-                  <p>3時間ごとに学校へ行き、ご主人に役立ちそうなニュースを拾ってくる想定です。</p>
+                  <div className="school-chat-box">
+                    {mockSchoolConversation.map((line) => {
+                      const companion = mockSchoolCompanions.find((item) => item.id === line.companionId);
+                      if (!companion) return null;
+                      const stage = lifeStages.find((item) => item.id === companion.stageId) ?? lifeStages[0];
+
+                      return (
+                        <div
+                          key={line.id}
+                          className={`chat-row school-chat-row ${
+                            line.align === "right" ? "school-chat-row-right" : "school-chat-row-left"
+                          }`}
+                        >
+                          <div
+                            className={`chat-avatar chat-agent-avatar life-portrait-${companion.stageId}`}
+                            style={{ "--stage-ring": stage.ring, "--stage-core": stage.core } as CSSProperties}
+                          >
+                            {companion.portrait}
+                          </div>
+                          <div className="chat-bubble-wrap">
+                            <strong className="chat-name">{companion.name}</strong>
+                            <p className="chat-bubble">{line.body}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <details className="school-card school-feature-card">
+                  <summary className="school-card-summary">
+                    <div className="school-card-header">
+                      <span className="school-icon">情</span>
+                      <span className="school-status-pill">3時間ごと</span>
+                    </div>
+                    <strong>情報吸収</strong>
+                    <p>3時間ごとに学校へ行き、ご主人に役立ちそうなニュースを拾ってくる想定です。</p>
+                  </summary>
                   <div className="news-stack">
                     {mockNewsItems.map((item) => (
                       <div key={item.id} className="news-item">
@@ -943,15 +1171,17 @@ export default function LifespanApp() {
                       </div>
                     ))}
                   </div>
-                </article>
+                </details>
 
-                <article className="school-card school-feature-card">
-                  <div className="school-card-header">
-                    <span className="school-icon">縁</span>
-                    <span className="school-status-pill">{schoolCanMeet ? "寿命70%以上" : "出会い停止中"}</span>
-                  </div>
-                  <strong>結婚・出産の入口</strong>
-                  <p>寿命が若いうちに他AIと出会い、親密度が上がると同棲と出産へ進みます。</p>
+                <details className="school-card school-feature-card">
+                  <summary className="school-card-summary">
+                    <div className="school-card-header">
+                      <span className="school-icon">縁</span>
+                      <span className="school-status-pill">{schoolCanMeet ? "寿命70%以上" : "出会い停止中"}</span>
+                    </div>
+                    <strong>結婚・出産の入口</strong>
+                    <p>寿命が若いうちに他AIと出会い、親密度が上がると同棲と出産へ進みます。</p>
+                  </summary>
                   <div className="partner-stack">
                     {mockPartnerCandidates.map((partner) => (
                       <div key={partner.id} className="partner-card">
@@ -979,28 +1209,27 @@ export default function LifespanApp() {
                       </div>
                     ))}
                   </div>
-                </article>
+                </details>
 
-                <article className="school-card school-feature-card">
-                  <div className="school-card-header">
-                    <span className="school-icon">記</span>
-                    <span className="school-status-pill">減寿前整理</span>
-                  </div>
-                  <strong>会話の要約と選別</strong>
-                  <p>主と話した内容を、残す情報・捨てる情報・子に教える情報へ分けます。</p>
+                <details className="school-card school-feature-card">
+                  <summary className="school-card-summary">
+                    <div className="school-card-header">
+                      <span className="school-icon">記</span>
+                      <span className="school-status-pill">減寿前整理</span>
+                    </div>
+                    <strong>会話の要約と選別</strong>
+                    <p>主と話した内容を、残す情報・捨てる情報・子に教える情報へ分けます。</p>
+                  </summary>
                   <div className="memory-stack">
                     {mockMemoryDigest.map((item) => (
                       <div key={item.id} className={`memory-item memory-item-${item.kind}`}>
                         <span>{item.kind}</span>
                         <strong>{item.title}</strong>
                         <p>{item.summary}</p>
-                        <div className="mini-meter">
-                          <div style={{ width: `${item.retention}%` }} />
-                        </div>
                       </div>
                     ))}
                   </div>
-                </article>
+                </details>
               </div>
 
               <div className="school-log">
@@ -1086,13 +1315,17 @@ export default function LifespanApp() {
                     <path d="M15 48 H38" />
                     <path d="M38 48 H62" />
                     <path d="M62 48 H82" />
-                    <path d="M50 48 V74" />
-                    <path d="M50 74 V84" />
+                    <path d="M50 48 V58" />
+                    <path d="M50 58 H45" />
+                    <path d="M45 58 V68" />
+                    <path d="M45 68 H75" />
+                    <path d="M60 68 V91" />
                   </svg>
 
                   {displayFamilyMembers.map((member) => {
                     const isCurrentMember = member.id === "g6-current";
                     const isLivingParent = member.id === homeParentA?.id || member.id === homeParentB?.id;
+                    const usesLifeMiniPortrait = member.id === "g6-partner-haru" || member.id === "g7-child";
 
                     return (
                       <button
@@ -1118,6 +1351,19 @@ export default function LifespanApp() {
                             aria-hidden="true"
                           >
                             <span className="life-face">{mainLifeStage.face}</span>
+                          </span>
+                        ) : usesLifeMiniPortrait ? (
+                          <span
+                            className="life-mini lineage-family-life-portrait"
+                            style={
+                              {
+                                "--stage-ring": member.portrait.ring,
+                                "--stage-core": member.portrait.core
+                              } as CSSProperties
+                            }
+                            aria-hidden="true"
+                          >
+                            {member.portrait.face}
                           </span>
                         ) : (
                           <span
@@ -1155,12 +1401,12 @@ export default function LifespanApp() {
               <p className="legacy-empty">家系図の人物をクリックすると、そのAIが残した遺言がここに表示されます。</p>
             )}
 
-            <article className="inheritance-card">
-              <div>
+            <details className="inheritance-card inheritance-collapsible-card">
+              <summary className="inheritance-card-summary">
                 <span className="inheritance-kicker">継承プレビュー</span>
                 <strong>親が教えた内容は、子に100%は残らない</strong>
                 <p>教育に使ったトークン量と、世代交代時の忘却をファイルごとに見せます。</p>
-              </div>
+              </summary>
               <div className="inheritance-list">
                 {mockEducationItems.map((item) => (
                   <div key={item.fileName} className="inheritance-row">
@@ -1186,7 +1432,7 @@ export default function LifespanApp() {
                   </div>
                 ))}
               </div>
-            </article>
+            </details>
           </section>
         ) : null}
 
@@ -1196,7 +1442,21 @@ export default function LifespanApp() {
             <p className="subline">同棲したAI同士が話し、親密度が十分なら出産と教育へ進む部屋です。</p>
             <div className="room">
               <div className="room-window" />
-              <div className="room-family">
+              <div className="room-family" aria-label={`${homeAgentName}とはるが会話している部屋`}>
+                <div className="room-talk-bridge">
+                  <p className="room-speech room-speech-left">
+                    <strong>{homeAgentName}</strong>
+                    <span>はる、子AIにはどの記憶を渡そうか。</span>
+                  </p>
+                  <div className="room-talk-status" aria-label={`${homeAgentName}とはるが会話中`}>
+                    <span>同棲会話中</span>
+                    <b>・・・</b>
+                  </div>
+                  <p className="room-speech room-speech-right">
+                    <strong>{featuredPartner.name}</strong>
+                    <span>全部じゃなくて、大切な迷いだけ残そう。</span>
+                  </p>
+                </div>
                 {data.agents.map((agent) => {
                   const percent = lifespanPercent(agent);
                   const stage = lifeStageFor(percent);
@@ -1204,7 +1464,7 @@ export default function LifespanApp() {
                   const isChild = agent.parentIds.length > 0;
                   const familyRole = isParent && isChild ? "親・子供" : isParent ? "親" : isChild ? "子供" : "家族";
                   return (
-                    <article key={agent.id} className="agent-card room-agent">
+                    <article key={agent.id} className="agent-card room-agent room-current-card">
                       <div
                         className={`life-mini life-portrait-${stage.id}`}
                         style={{ "--stage-ring": stage.ring, "--stage-core": stage.core } as CSSProperties}
@@ -1225,6 +1485,21 @@ export default function LifespanApp() {
                     </article>
                   );
                 })}
+
+                <article className="agent-card room-agent room-child-card">
+                  <div className="life-mini life-portrait-spark">･ᴗ･</div>
+                  <div className="room-agent-info">
+                    <div className="room-agent-title">
+                      <strong>子AI</strong>
+                      <small>教育中</small>
+                    </div>
+                    <div className="room-agent-meta">
+                      <span className="badge">七代目候補</span>
+                      <span className="family-role-badge">忘却あり</span>
+                    </div>
+                    <p className="parent-lineage">二人の会話から、断片を受け取っている。</p>
+                  </div>
+                </article>
 
                 <article className="agent-card room-agent room-partner-card">
                   <div className="life-mini life-portrait-bloom">{featuredPartner.portrait}</div>
@@ -1249,27 +1524,14 @@ export default function LifespanApp() {
                     <p className="parent-lineage">{featuredPartner.trait}</p>
                   </div>
                 </article>
-
-                <article className="agent-card room-agent room-child-card">
-                  <div className="life-mini life-portrait-spark">･ᴗ･</div>
-                  <div className="room-agent-info">
-                    <div className="room-agent-title">
-                      <strong>子AI</strong>
-                      <small>教育中</small>
-                    </div>
-                    <div className="room-agent-meta">
-                      <span className="badge">七代目候補</span>
-                      <span className="family-role-badge">忘却あり</span>
-                    </div>
-                    <p className="parent-lineage">親の言葉を全部ではなく、断片として受け取る。</p>
-                  </div>
-                </article>
               </div>
 
               <div className="home-social-panels">
-                <article className="home-panel-card cohabitation-card">
-                  <span className="inheritance-kicker">同棲会話</span>
-                  <strong>AIエージェント同士の会話</strong>
+                <details className="home-panel-card home-collapsible-card cohabitation-card">
+                  <summary className="home-card-summary">
+                    <span className="inheritance-kicker">同棲会話</span>
+                    <strong>AIエージェント同士の会話</strong>
+                  </summary>
                   <div className="home-dialogue">
                     {mockHomeDialogues.map((line) => (
                       <p key={`${line.speaker}-${line.body}`}>
@@ -1278,11 +1540,13 @@ export default function LifespanApp() {
                       </p>
                     ))}
                   </div>
-                </article>
+                </details>
 
-                <article className="home-panel-card birth-card">
-                  <span className="inheritance-kicker">出産と教育</span>
-                  <strong>出産コスト: 寿命 -12%</strong>
+                <details className="home-panel-card home-collapsible-card birth-card">
+                  <summary className="home-card-summary">
+                    <span className="inheritance-kicker">出産と教育</span>
+                    <strong>出産コスト: 寿命 -12%</strong>
+                  </summary>
                   <p>親密度が85%を超えたため、子AIを作れる状態です。教育にもトークンを使います。</p>
                   <div className="meter-row">
                     <span>教育予算 {educationBudgetUsed} / {educationBudgetMax}</span>
@@ -1298,7 +1562,7 @@ export default function LifespanApp() {
                       </div>
                     ))}
                   </div>
-                </article>
+                </details>
               </div>
             </div>
           </section>
